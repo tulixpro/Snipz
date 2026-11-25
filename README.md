@@ -41,3 +41,8 @@ This is a starter, not a fully production-hardened social network. Before inviti
 - Add automated tests, monitoring, backups and a privacy policy / terms of service.
 
 The current video bucket is public so published clips can play without signing in. Do not upload private or sensitive videos.
+
+
+## Cloudflare backend status
+
+The cloudflare/ directory contains an initial Worker deployment scaffold and migration plan. It is not deployed, and the live frontend still uses Supabase. Follow cloudflare/README.md before switching providers.
