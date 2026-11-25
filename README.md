@@ -1,48 +1,40 @@
 # Snipz
 
-Snipz is a responsive short-video social app starter built with HTML/CSS/JavaScript and Supabase.
+Snipz ist eine Kurzvideo-Plattform mit vertikalem Feed, Profilen, Likes, Kommentaren und Uploads.
 
-## Included
+## Projektstatus
 
-- Email/password registration and sign-in
-- Public short-video feed backed by Supabase
-- Video upload to Supabase Storage (100 MB limit)
-- Likes, comments, follows and profile editing
-- Video reporting flow
-- Row Level Security policies for the database and storage
+Die Weboberfläche und das Cloudflare-Server-Grundgerüst liegen in diesem Repository. Der Server ist noch nicht live geschaltet. Die bisherigen Konten- und Medienfunktionen werden erst nach vollständiger Umstellung und Sicherheitstests aktiviert.
 
-## Connect your Supabase project
+## Geplante Infrastruktur
 
-1. Create a project at https://supabase.com.
-2. Open **Project Settings -> API** and copy the **Project URL** and **anon/public key**.
-3. Edit `config.js` and replace the two placeholder values. Use only the anon/public key in browser code. **Never use a service_role key in this repository.**
-4. In Supabase, open **SQL Editor**, paste and run all of `supabase/schema.sql`.
-5. In **Authentication -> URL Configuration**, add the URL where you host Snipz to the allowed redirect/site URLs.
-6. Serve the repository using a static host (GitHub Pages, Netlify, Cloudflare Pages, etc.) or a local static server. Because this app uses JavaScript modules, do not open index.html as a `file://` URL.
+- Cloudflare Pages für die Website
+- Cloudflare Workers für die API
+- Cloudflare D1 als verwaltete Datenbank
+- Cloudflare R2 für Video- und Bilddateien
+- Turnstile, Rate Limits und Upload-Quoten gegen automatisierten Missbrauch
 
-## Run locally
+## Sicherheit
 
-For example, from the repository root:
+- Keine Datenbankpasswörter oder privaten Schlüssel im Browser oder Repository.
+- Anmeldung und Rollen werden serverseitig geprüft.
+- Admin-Rechte werden niemals aus Browser-Eingaben übernommen.
+- Uploads erhalten Größen- und Dateitypgrenzen sowie kurzlebige, serverseitig autorisierte Upload-Freigaben.
+- Moderation, Meldungen, Audit-Protokolle und Kontosperren müssen serverseitig umgesetzt und getestet werden.
+- Followerzahlen und automatische Verifizierung ab 1.000.000 Followern werden ausschließlich aus vertrauenswürdigen Daten berechnet.
+
+## Lokaler Start
+
+Für die reine Weboberfläche kann ein statischer Server verwendet werden:
 
 ```bash
 python -m http.server 8000
 ```
 
-Then open http://localhost:8000.
+Dann http://localhost:8000 öffnen.
 
-## Important before a public launch
+## Cloudflare-Einrichtung
 
-This is a starter, not a fully production-hardened social network. Before inviting the public:
-- Configure email verification, password recovery, rate limits and abuse protection in Supabase.
-- Add a real moderation workflow for reviewing reports, removing content and suspending accounts.
-- Add age-appropriate privacy defaults, community guidelines, blocking, account deletion and data export.
-- Consider private video storage with signed URLs, video transcoding, thumbnail generation and upload scanning.
-- Review applicable privacy, child-safety, copyright and platform requirements for your launch region.
-- Add automated tests, monitoring, backups and a privacy policy / terms of service.
+Siehe [cloudflare/README.md](cloudflare/README.md). Die dort beschriebene Worker-Datei ist aktuell nur ein Health-Check-Grundgerüst. Sie bietet noch keine fertige Anmeldung, Uploads, Feed-API oder Admin-Funktionen.
 
-The current video bucket is public so published clips can play without signing in. Do not upload private or sensitive videos.
-
-
-## Cloudflare backend status
-
-The cloudflare/ directory contains an initial Worker deployment scaffold and migration plan. It is not deployed, and the live frontend still uses Supabase. Follow cloudflare/README.md before switching providers.
+Vor dem öffentlichen Start sind unter anderem Authentifizierung, Autorisierung, Upload-Schutz, Moderation, Backups, Monitoring, Datenschutz und Wiederherstellungstests erforderlich.
