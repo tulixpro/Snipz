@@ -13,6 +13,18 @@
 
 @media(max-width:850px){.layout{grid-template-columns:64px minmax(0,650px);justify-content:center}.side .label,.right{display:none}.nav{text-align:center;padding:13px 5px}}
 @media(max-width:600px){.top{height:56px;padding:0 11px}.search{width:36vw;padding:8px}.top .btn{display:none}.layout{display:block;padding:12px 0 70px}.side,.right{display:none}.feed{gap:12px}.post{border-radius:0;border-left:0;border-right:0}.media{height:62vh;min-height:340px}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:10;justify-content:space-around;background:#15151bf2;border-top:1px solid #ffffff20;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}.mobile button{background:none;font-size:20px}.notice{margin:10px;border-radius:10px}}
+
+/* Snipz visual polish */
+:root{--pink:#ff3d78;--violet:#8065ff;--panel:#171720}
+body{background:radial-gradient(ellipse at 50% -18%,#352044 0%,#111019 38%,var(--bg) 72%)}
+.brand{background:linear-gradient(95deg,#fff 25%,#ff6b9a 58%,#9a83ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn,.primary,.follow,.action{transition:transform .18s ease,filter .18s ease,background .18s ease}
+.btn:hover,.primary:hover,.follow:hover{transform:translateY(-1px);filter:brightness(1.13)}
+.primary{background:linear-gradient(105deg,#ff356b,#a64dff);box-shadow:0 5px 22px #ff356b35}
+.post,.panel{box-shadow:0 12px 36px #0003;backdrop-filter:blur(10px)}
+.post{border-color:#ffffff18}
+.avatar{background:linear-gradient(135deg,#ff356b,#8a5bff);box-shadow:0 0 18px #a65bff45}
+.search:focus,.field:focus,.dialog input:focus,.dialog textarea:focus{outline:2px solid #a36cff;outline-offset:1px}
 </style></head>
 <body>
 <header class="top"><div class="brand">snip<span>z</span></div><input id="search" class="search" placeholder="Videos suchen …"><button class="btn" id="authBtn">Anmelden</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
