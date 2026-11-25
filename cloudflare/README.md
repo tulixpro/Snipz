@@ -25,7 +25,7 @@ A green health check is not proof that the social app backend is production-read
 
 ## Deploy preparation
 
-1. Create a Cloudflare account and a Pages project for this repository.
+1. Use your existing Cloudflare account and create a Pages project for this repository.
 2. Install Wrangler locally and authenticate with npx wrangler login.
 3. Create D1 database snipz-db and R2 bucket snipz-videos.
 4. Replace the D1 database ID and Pages origin in wrangler.toml.
