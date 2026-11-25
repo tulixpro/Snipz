@@ -1,42 +1,51 @@
-# Snipz on Cloudflare (migration plan)
+# Snipz Cloudflare backend
 
-This folder documents the proposed Supabase-free hosting architecture.
+This is an initial, deliberately limited deployment scaffold — **not a live server**.
+The current website still uses Supabase. Do not switch the frontend until authentication,
+authorization, uploads, moderation and migration tests are complete.
 
-## Important: this is a scaffold, not a live migration
+## Components
 
-The current app still uses Supabase Auth, Database and Storage. Do not remove the existing setup until the Cloudflare backend has been deployed and tested. No cloud account or storage has been created by committing these files.
+- Pages: static website.
+- Worker: API entry point (src/index.js).
+- D1: managed SQL database (../schema.sql is the initial schema proposal).
+- R2: video object storage.
+- Turnstile: bot protection on signup and other public forms.
 
-## Proposed services
+## What the Worker currently does
 
-- Cloudflare Pages: static website hosting.
-- Cloudflare Workers: API and server-side authorization.
-- Cloudflare D1: managed SQL database.
-- Cloudflare R2: video object storage.
-- Cloudflare Turnstile: bot/spam protection.
+- Exposes GET /api/health to test the Worker and D1 binding.
+- Restricts browser CORS to the exact ALLOWED_ORIGIN.
+- Adds basic browser security headers.
+- Returns generic errors rather than leaking infrastructure details.
+- Does not expose D1 or R2 directly to the browser.
+- Does not yet implement sign-in, upload, feed mutations, admin actions or moderation.
 
-Cloudflare manages the database service; you do not need to create or publish a database-server password. Account login and deployment authorization are still required. Store any secrets as Worker secrets, never in GitHub files or browser JavaScript.
+A green health check is not proof that the social app backend is production-ready.
 
-## Free-tier reality
+## Deploy preparation
 
-Free plans have quotas, limits and product-specific restrictions. Video storage and especially video delivery can exceed free allowances quickly. Millions of videos or millions of views cannot be promised free. Add upload size limits, rate limits, per-account quotas, abuse controls, alerts and a hard operational budget before opening uploads publicly. Check Cloudflare's current pricing and terms before launch.
+1. Create a Cloudflare account and a Pages project for this repository.
+2. Install Wrangler locally and authenticate with npx wrangler login.
+3. Create D1 database snipz-db and R2 bucket snipz-videos.
+4. Replace the D1 database ID and Pages origin in wrangler.toml.
+5. Apply the reviewed SQL schema to D1; do not apply it to a production database without a backup.
+6. Run npx wrangler dev and verify /api/health.
+7. Deploy with npx wrangler deploy, then verify the deployed health endpoint.
 
-## Admin and verification policy
+Cloudflare account access and deployment approval are required. Never paste account passwords,
+API tokens, database credentials or private keys into chat or GitHub.
 
-- Reserved admin handle: `Snips`.
-- Never ship an admin password, admin token, or admin role in client-side code.
-- Provision the first admin only through a trusted server-side setup process after deployment. Store the admin identity in a Worker secret or protected D1 record; require strong authentication and preferably MFA.
-- Admin moderation actions must be performed by the Worker after checking the authenticated user's server-side role. Hiding an admin button in the browser is not authorization.
-- Verified badge policy requested: accounts with at least 1,000,000 followers qualify automatically. Counts must be calculated from server/database records, not a value supplied by the browser. Admin may separately grant/revoke verification with an audit log.
-- Admin moderation should support review queues, remove/restore videos, suspend accounts, and record a reason, actor and timestamp. Keep user reports and an appeal path.
+## Security work required before public launch
 
-## Safe migration order
+- Use a maintained identity provider and verify every access token server-side on every protected route.
+- Derive the user ID and role from the verified token; never trust client-supplied user IDs or role flags.
+- Implement per-user and per-IP rate limits, Turnstile, upload quotas and request-size limits.
+- Issue short-lived, object-specific upload URLs only after authorization; validate file type and size.
+- Keep uploaded media private until moderation/scanning is complete; never accept arbitrary object keys from clients.
+- Add report queues, moderator authorization, audit logs, account suspension, appeals and admin MFA.
+- Calculate follower counts and the 1,000,000-follower verification rule on the server.
+- Add backup/restore tests, monitoring, alerts, privacy controls, account deletion and data export.
+- Configure Cloudflare WAF/rate-limiting rules and review current pricing/quotas.
 
-1. Create a Cloudflare account and enable Pages, Workers, D1, R2 and Turnstile.
-2. Deploy the API with private bindings and secrets.
-3. Create D1 tables and test authorization policies.
-4. Add authenticated upload URLs so video bytes go directly to R2 without exposing account secrets.
-5. Migrate account sign-in and existing profile/video metadata.
-6. Test owner-only edits/deletes, report submission, admin moderation, rate limits and backups.
-7. Switch the website to the new API only after tests pass; then remove Supabase references.
-
-Never paste passwords, API tokens, or private keys into chat or commit them to this repository.
+The reserved brand/admin handle is Snipz. No admin account or credentials are created by this scaffold.
