@@ -52,5 +52,5 @@ $('profileNav').onclick=$('mobileProfile').onclick=async()=>{if(!session){toast(
 $('profileClose').onclick=()=>modal('profileModal',false);$('profileSave').onclick=async()=>{const username=$('profileUsername').value.trim().toLowerCase();if(!/^[a-z0-9_]{3,24}$/.test(username)){toast('Benutzername: 3–24 Zeichen, a-z, 0-9 oder _.');return}const {data,error}=await supabase.from('profiles').update({username,display_name:$('profileDisplay').value.trim(),bio:$('profileBio').value.trim()}).eq('id',session.user.id).select().single();if(error){toast(error.message);return}profile=data;modal('profileModal',false);await refresh();toast('Profil gespeichert!')};
 $('logoutNav').onclick=async()=>{await supabase.auth.signOut();session=null;profile=null;await refreshAuth();await refresh()};
 $('mobileSearch').onclick=()=>$('search').focus();
-if(supabase){supabase.auth.onAuthStateChange(async()=>{await refreshAuth();await refresh()});await refreshAuth();await refresh()}else needConfig();
+if(supabase){supabase.auth.onAuthStateChange((_event,newSession)=>{session=newSession;setTimeout(async()=>{await refreshAuth();await refresh()},0)});await refreshAuth();await refresh()}else needConfig();
 </script></body></html>
