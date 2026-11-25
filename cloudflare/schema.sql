@@ -69,5 +69,5 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
 );
 
 -- Do not add an admin user or password here. Bootstrap admin access server-side
--- after authenticating the owner and verifying the reserved Snips identity.
+-- after authenticating the owner and verifying the reserved Snipz identity.
 -- The Worker must enforce all authorization checks; D1 is not directly exposed.
