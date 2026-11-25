@@ -1,25 +1,43 @@
 # Snipz
 
-Snipz is a responsive short-video social app prototype.
+Snipz is a responsive short-video social app starter built with HTML/CSS/JavaScript and Supabase.
 
-## Features
+## Included
 
-- Vertical-style short video feed
-- Like and unlike posts
-- Open comment threads and add comments
-- Upload a local video (up to 100 MB) for a session preview
-- Search captions and creator names
-- Follow button interaction and share action
-- Responsive desktop and mobile layout
+- Email/password registration and sign-in
+- Public short-video feed backed by Supabase
+- Video upload to Supabase Storage (100 MB limit)
+- Likes, comments, follows and profile editing
+- Video reporting flow
+- Row Level Security policies for the database and storage
+
+## Connect your Supabase project
+
+1. Create a project at https://supabase.com.
+2. Open **Project Settings -> API** and copy the **Project URL** and **anon/public key**.
+3. Edit `config.js` and replace the two placeholder values. Use only the anon/public key in browser code. **Never use a service_role key in this repository.**
+4. In Supabase, open **SQL Editor**, paste and run all of `supabase/schema.sql`.
+5. In **Authentication -> URL Configuration**, add the URL where you host Snipz to the allowed redirect/site URLs.
+6. Serve the repository using a static host (GitHub Pages, Netlify, Cloudflare Pages, etc.) or a local static server. Because this app uses JavaScript modules, do not open index.html as a `file://` URL.
 
 ## Run locally
 
-Open `index.html` in a modern browser. No build step is required.
+For example, from the repository root:
 
-## Demo limitations
+```bash
+python -m http.server 8000
+```
 
-This is a front-end prototype. Likes, comments, and the demo display name are stored in the browser on the current device. Uploaded video files are previewed locally and are not sent to a server. There is no real account system, shared database, cloud video storage, moderation backend, or cross-device feed yet. A production release needs a backend, secure authentication, managed video storage, privacy controls, reporting/moderation, and age-appropriate safety features.
+Then open http://localhost:8000.
 
-## License
+## Important before a public launch
 
-Add a license before redistributing this project.
+This is a starter, not a fully production-hardened social network. Before inviting the public:
+- Configure email verification, password recovery, rate limits and abuse protection in Supabase.
+- Add a real moderation workflow for reviewing reports, removing content and suspending accounts.
+- Add age-appropriate privacy defaults, community guidelines, blocking, account deletion and data export.
+- Consider private video storage with signed URLs, video transcoding, thumbnail generation and upload scanning.
+- Review applicable privacy, child-safety, copyright and platform requirements for your launch region.
+- Add automated tests, monitoring, backups and a privacy policy / terms of service.
+
+The current video bucket is public so published clips can play without signing in. Do not upload private or sensitive videos.
