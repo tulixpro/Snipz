@@ -25,17 +25,37 @@ body{background:radial-gradient(ellipse at 50% -18%,#352044 0%,#111019 38%,var(-
 .post{border-color:#ffffff18}
 .avatar{background:linear-gradient(135deg,#ff356b,#8a5bff);box-shadow:0 0 18px #a65bff45}
 .search:focus,.field:focus,.dialog input:focus,.dialog textarea:focus{outline:2px solid #a36cff;outline-offset:1px}
+/* Snipz winter / Christmas theme */
+:root{--holiday-red:#ef4567;--holiday-green:#2fa77a;--holiday-gold:#f3ca78}
+body{background:radial-gradient(ellipse at 50% -18%,#1c493e 0%,#101820 42%,#0c0c10 78%)}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.22;background-image:radial-gradient(2px 2px at 18px 32px,#fff 98%,transparent),radial-gradient(1.5px 1.5px at 88px 112px,#fff 98%,transparent),radial-gradient(2px 2px at 158px 72px,#fff 98%,transparent),radial-gradient(1px 1px at 218px 162px,#fff 98%,transparent);background-size:260px 210px;animation:snipzSnow 18s linear infinite}
+@keyframes snipzSnow{from{background-position:0 -210px}to{background-position:0 210px}}
+.top{background:#101b1aee;border-bottom-color:#5fc49a35}
+.brand span{background:linear-gradient(135deg,#ef4567,#f3ca78);-webkit-background-clip:text;background-clip:text;color:transparent}
+.primary{background:linear-gradient(105deg,#e74665,#238c69);box-shadow:0 5px 22px #e7466530}
+.avatar{background:linear-gradient(135deg,#e74665,#258b6c)}
+.post,.panel,.dialog{border-color:#75c7a52b}
+.christmas-note{display:flex;align-items:center;gap:8px;max-width:850px;margin:12px auto 0;padding:9px 14px;border:1px solid #d7b56c55;border-radius:12px;background:linear-gradient(100deg,#17372fdd,#39212bdd);color:#f8e8c2;font-size:13px}
+#supportBtn{border:1px solid #d7b56c66}
+.support-status{padding:10px 12px;border-radius:12px;background:#2a302b;color:#f4dca6;font-size:13px}
+.support-log{min-height:130px;max-height:280px;overflow:auto;background:#111820;border:1px solid #ffffff18;border-radius:14px;padding:12px;margin:12px 0}
+.support-bubble{max-width:90%;padding:10px 12px;border-radius:14px;margin:8px 0;background:#24352f;font-size:14px}
+.support-bubble.bot{border:1px solid #75c7a533}
+@media(prefers-reduced-motion:reduce){body:before{animation:none}}
+
 </style></head>
 <body>
-<header class="top"><div class="brand">snip<span>z</span></div><input id="search" class="search" placeholder="Videos suchen …"><button class="btn" id="authBtn">Anmelden</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
+<header class="top"><div class="brand">snip<span>z</span></div><input id="search" class="search" placeholder="Videos suchen …"><button class="btn" id="supportBtn">✦ Support</button><button class="btn" id="authBtn">Anmelden</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
+<div class="christmas-note">❄️ <b>Snipz Winter-Edition</b> <span>— Schöne Adventszeit!</span> 🎄</div>
 <div id="setupNotice" class="notice" hidden>Snipz wird gerade sicher eingerichtet. Konten, Uploads und Interaktionen sind erst verfügbar, wenn der neue Server vollständig eingerichtet und getestet ist.</div>
 <div class="layout"><aside class="side"><div class="nav active">⌂ <span class="label"> Für dich</span></div><div class="nav">◎ <span class="label"> Entdecken</span></div><div class="nav" id="sideUpload">＋ <span class="label"> Hochladen</span></div><div class="nav" id="profileNav">♙ <span class="label"> Mein Profil</span></div><div class="nav" id="logoutNav">↪ <span class="label"> Abmelden</span></div></aside>
 <main><div class="feedhead">Für dich · Kurzvideos</div><section class="feed" id="feed"><div class="empty">Feed wird geladen …</div></section></main>
 <aside class="right"><div class="panel"><h3>🔥 Willkommen bei Snipz</h3><p>Entdecke Clips, teile Ideen und finde deine Community.</p><button class="primary" id="rightUpload">Video erstellen</button></div><div class="panel"><h3>Community</h3><p>Sei freundlich. Teile nur Inhalte, an denen du die nötigen Rechte hast. Melde problematische Beiträge.</p></div></aside></div>
-<nav class="mobile"><button>⌂</button><button id="mobileSearch">⌕</button><button id="mobileUpload">＋</button><button id="mobileProfile">♙</button></nav>
+<nav class="mobile"><button>⌂</button><button id="mobileSearch">⌕</button><button id="mobileUpload">＋</button><button id="mobileProfile">♙</button><button id="mobileSupport" aria-label="Support">✦</button></nav>
 <div class="modal" id="authModal"><div class="dialog"><h2 id="authTitle">Bei Snipz anmelden</h2><p class="muted">Nutze deine E-Mail-Adresse und ein Passwort.</p><input id="email" type="email" autocomplete="email" placeholder="E-Mail"><input id="password" type="password" autocomplete="current-password" placeholder="Passwort (mind. 8 Zeichen)"><input id="username" maxlength="24" placeholder="Benutzername (bei Registrierung)"><div class="row"><button class="btn" id="authClose">Schließen</button><button class="btn" id="toggleAuth">Konto erstellen</button><button class="primary" id="authSubmit">Anmelden</button></div></div></div>
 <div class="modal" id="uploadModal"><div class="dialog"><h2>Video veröffentlichen</h2><p class="muted">MP4, WebM oder MOV · maximal 100 MB.</p><input id="videoFile" type="file" accept="video/mp4,video/webm,video/quicktime"><textarea id="videoCaption" maxlength="500" placeholder="Beschreibe dein Video …"></textarea><div class="row"><button class="btn" id="uploadClose">Abbrechen</button><button class="primary" id="publish">Veröffentlichen</button></div></div></div>
 <div class="modal" id="profileModal"><div class="dialog"><h2>Dein Profil & Konto</h2><p class="muted" id="accountStats">Deine Konto-Übersicht</p><input id="profileUsername" maxlength="24" placeholder="Benutzername"><input id="profileDisplay" maxlength="40" placeholder="Anzeigename"><textarea id="profileBio" maxlength="160" placeholder="Kurzbeschreibung"></textarea><div style="border-top:1px solid #ffffff20;margin-top:12px;padding-top:12px"><b>Passwort ändern</b><input id="newPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Neues Passwort (mind. 8 Zeichen)"><button class="btn" id="passwordSave" style="width:100%">Passwort aktualisieren</button><p class="muted">Dein Passwort wird vom Anmeldedienst geschützt verwaltet und nicht in deinem Profil gespeichert.</p></div><div class="row"><button class="btn" id="profileClose">Schließen</button><button class="primary" id="profileSave">Speichern</button></div></div></div>
+<div class="modal" id="supportModal"><div class="dialog"><h2>✦ Tillbot Core Support</h2><p class="muted">Dein Snipz-Support-Assistent</p><div class="support-status">Noch nicht mit Tillbot Core verbunden. Die Chat-Oberfläche ist vorbereitet.</div><div class="support-log"><div class="support-bubble bot"><b>Tillbot Core</b><br>Hallo! Der Support-Chat wird gerade eingerichtet. Sobald die Verbindung zu deiner KI bereitsteht, kannst du hier Fragen zu Snipz stellen.</div></div><input class="field" id="supportMessage" placeholder="Support-Nachricht (noch nicht aktiv)" disabled><div class="row"><button class="btn" id="supportClose">Schließen</button></div></div></div>
 <div class="toast" id="toast"></div>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -77,5 +97,7 @@ $('profileNav').onclick=$('mobileProfile').onclick=async()=>{if(!session){toast(
 $('profileClose').onclick=()=>modal('profileModal',false);$('passwordSave').onclick=async()=>{const password=$('newPassword').value;if(password.length<8){toast('Bitte ein Passwort mit mindestens 8 Zeichen eingeben.');return}const {error}=await supabase.auth.updateUser({password});if(error){toast(error.message||'Passwort konnte nicht geändert werden.');return}$('newPassword').value='';toast('Passwort wurde aktualisiert.');};$('profileSave').onclick=async()=>{const username=$('profileUsername').value.trim().toLowerCase();if(!/^[a-z0-9_]{3,24}$/.test(username)){toast('Benutzername: 3–24 Zeichen, a-z, 0-9 oder _.');return}const {data,error}=await supabase.from('profiles').update({username,display_name:$('profileDisplay').value.trim(),bio:$('profileBio').value.trim()}).eq('id',session.user.id).select().single();if(error){toast(error.message);return}profile=data;modal('profileModal',false);await refresh();toast('Profil gespeichert!')};
 $('logoutNav').onclick=async()=>{await supabase.auth.signOut();session=null;profile=null;await refreshAuth();await refresh()};
 $('mobileSearch').onclick=()=>$('search').focus();
+$('supportBtn').onclick=$('mobileSupport').onclick=()=>modal('supportModal',true);
+$('supportClose').onclick=()=>modal('supportModal',false);
 if(supabase){supabase.auth.onAuthStateChange((_event,newSession)=>{session=newSession;setTimeout(async()=>{await refreshAuth();await refresh()},0)});await refreshAuth();await refresh()}else needConfig();
 </script></body></html>
