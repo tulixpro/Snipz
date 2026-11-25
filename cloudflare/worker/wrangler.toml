@@ -1,0 +1,16 @@
+name = "snipz-api"
+main = "src/index.js"
+compatibility_date = "2026-11-25"
+
+[vars]
+ALLOWED_ORIGIN = "https://YOUR-SNIPZ-PAGES-DOMAIN"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "snipz-db"
+database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+migrations_dir = "../migrations"
+
+[[r2_buckets]]
+binding = "VIDEOS"
+bucket_name = "snipz-videos"
