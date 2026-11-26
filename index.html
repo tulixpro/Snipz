@@ -58,9 +58,43 @@ body{
 .mobile{background:#0b1525f5;border-top-color:#8bbdff25}
 .notice{background:#17243a;border-color:#315783;color:#d6e9ff}
 .toast{background:#1b2e49;color:#f4f8ff}
+
+/* Motion, glow and accessible micro-interactions */
+:root{--snipz-blue:#2684ff;--snipz-cyan:#55b5ff}
+html{scroll-behavior:smooth}
+body:before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 18% 20%,#1675f51c,transparent 30%),radial-gradient(circle at 82% 65%,#36a7ff12,transparent 32%);animation:ambientDrift 18s ease-in-out infinite alternate}
+@keyframes ambientDrift{from{transform:translate3d(-1.5%,0,0) scale(1)}to{transform:translate3d(1.5%,-1%,0) scale(1.05)}}
+.brand{filter:drop-shadow(0 0 12px #2684ff55);animation:logoGlow 4s ease-in-out infinite alternate}
+@keyframes logoGlow{from{filter:drop-shadow(0 0 5px #2684ff35)}to{filter:drop-shadow(0 0 16px #2684ff88)}}
+.primary{position:relative;isolation:isolate;overflow:hidden}
+.primary:after{content:"";position:absolute;inset:-80% auto -80% -45%;width:35%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,#ffffff55,transparent);transition:left .65s ease;z-index:-1}
+.primary:hover:after{left:125%}
+.post,.panel{transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.post:hover,.panel:hover{transform:translateY(-3px);border-color:#55b5ff55;box-shadow:0 16px 42px #0006,0 0 24px #2684ff13}
+.avatar{position:relative}
+.avatar:after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid #55b5ff55;opacity:0;transform:scale(.86);transition:all .25s ease}
+.user:hover .avatar:after{opacity:1;transform:scale(1)}
+.nav{transition:background .2s ease,color .2s ease,transform .2s ease}
+.nav:hover{transform:translateX(3px)}
+.action{transition:transform .18s ease,color .18s ease}
+.action:hover{transform:scale(1.12);color:#65baff}
+.modal.show .dialog{animation:dialogPop .24s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dialogPop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.help-btn{width:38px;height:38px;border-radius:50%;background:#142b49;border:1px solid #55b5ff55;color:#cfe8ff;font-weight:900;box-shadow:0 0 16px #2684ff22}
+.tutorial-dialog{width:min(500px,100%);border-color:#55b5ff55;box-shadow:0 20px 80px #0009,0 0 35px #1675f522}
+.tutorial-kicker{color:#73bdff;font-size:12px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}
+.tutorial-progress{height:5px;background:#23344d;border-radius:9px;overflow:hidden;margin:15px 0 20px}
+.tutorial-progress span{display:block;height:100%;background:linear-gradient(90deg,#1675f5,#55b5ff);border-radius:9px;transition:width .25s ease}
+.tutorial-icon{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#1675f533,#55b5ff22);border:1px solid #55b5ff44;font-size:26px;margin:12px 0}
+.tutorial-copy{color:#b7c9e2;min-height:62px}
+.tutorial-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:22px}
+.tutorial-step{color:#8297b5;font-size:12px}
+button:focus-visible{outline:2px solid #72bdff;outline-offset:3px}
+@media(hover:none){.post:hover,.panel:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style></head>
 <body>
-<header class="top"><div class="brand">snip<span>z</span></div><input id="search" class="search" placeholder="Videos suchen …"><button class="btn" id="authBtn">Anmelden</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
+<header class="top"><div class="brand">snip<span>z</span></div><input id="search" class="search" placeholder="Videos suchen …"><button class="btn" id="authBtn">Anmelden</button><button class="help-btn" id="helpBtn" aria-label="Snipz Tutorial öffnen" title="Tutorial">?</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
 <div id="setupNotice" class="notice" hidden>Snipz wird gerade sicher eingerichtet. Konten, Uploads und Interaktionen sind erst verfügbar, wenn der neue Server vollständig eingerichtet und getestet ist.</div>
 <div class="layout"><aside class="side"><div class="nav active">⌂ <span class="label"> Für dich</span></div><div class="nav">◎ <span class="label"> Entdecken</span></div><div class="nav" id="sideUpload">＋ <span class="label"> Hochladen</span></div><div class="nav" id="profileNav">♙ <span class="label"> Mein Profil</span></div><div class="nav" id="logoutNav">↪ <span class="label"> Abmelden</span></div></aside>
 <main><div class="feedhead">Für dich · Kurzvideos</div><section class="feed" id="feed"><div class="empty">Feed wird geladen …</div></section></main>
@@ -69,7 +103,25 @@ body{
 <div class="modal" id="authModal"><div class="dialog"><h2 id="authTitle">Bei Snipz anmelden</h2><p class="muted">Nutze deine E-Mail-Adresse und ein Passwort.</p><input id="email" type="email" autocomplete="email" placeholder="E-Mail"><input id="password" type="password" autocomplete="current-password" placeholder="Passwort (mind. 8 Zeichen)"><input id="username" maxlength="24" placeholder="Benutzername (bei Registrierung)"><div class="row"><button class="btn" id="authClose">Schließen</button><button class="btn" id="toggleAuth">Konto erstellen</button><button class="primary" id="authSubmit">Anmelden</button></div></div></div>
 <div class="modal" id="uploadModal"><div class="dialog"><h2>Video veröffentlichen</h2><p class="muted">MP4, WebM oder MOV · maximal 100 MB.</p><input id="videoFile" type="file" accept="video/mp4,video/webm,video/quicktime"><textarea id="videoCaption" maxlength="500" placeholder="Beschreibe dein Video …"></textarea><div class="row"><button class="btn" id="uploadClose">Abbrechen</button><button class="primary" id="publish">Veröffentlichen</button></div></div></div>
 <div class="modal" id="profileModal"><div class="dialog"><h2>Dein Profil & Konto</h2><p class="muted" id="accountStats">Deine Konto-Übersicht</p><input id="profileUsername" maxlength="24" placeholder="Benutzername"><input id="profileDisplay" maxlength="40" placeholder="Anzeigename"><textarea id="profileBio" maxlength="160" placeholder="Kurzbeschreibung"></textarea><div style="border-top:1px solid #ffffff20;margin-top:12px;padding-top:12px"><b>Passwort ändern</b><input id="newPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Neues Passwort (mind. 8 Zeichen)"><button class="btn" id="passwordSave" style="width:100%">Passwort aktualisieren</button><p class="muted">Dein Passwort wird vom Anmeldedienst geschützt verwaltet und nicht in deinem Profil gespeichert.</p></div><div class="row"><button class="btn" id="profileClose">Schließen</button><button class="primary" id="profileSave">Speichern</button></div></div></div>
-<div class="toast" id="toast"></div>
+
+<div class="modal" id="tutorialModal" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+  <div class="dialog tutorial-dialog">
+    <div class="tutorial-kicker">Willkommen bei Snipz</div>
+    <div class="tutorial-progress"><span id="tutorialProgress" style="width:25%"></span></div>
+    <div class="tutorial-icon" id="tutorialIcon" aria-hidden="true">▶</div>
+    <div class="tutorial-step" id="tutorialStep">SCHRITT 1 VON 4</div>
+    <h2 id="tutorialTitle">Entdecke deinen Feed</h2>
+    <p class="tutorial-copy" id="tutorialCopy">Scrolle durch den Kurzvideo-Feed. Auf dem Handy kannst du zum nächsten Clip wischen oder scrollen.</p>
+    <div class="tutorial-actions">
+      <button class="btn" id="tutorialSkip">Schließen</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="tutorialBack" disabled>Zurück</button>
+        <button class="primary" id="tutorialNext">Weiter</button>
+      </div>
+    </div>
+  </div>
+</div>
+\n<div class="toast" id="toast"></div>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
@@ -111,4 +163,29 @@ $('profileClose').onclick=()=>modal('profileModal',false);$('passwordSave').oncl
 $('logoutNav').onclick=async()=>{await supabase.auth.signOut();session=null;profile=null;await refreshAuth();await refresh()};
 $('mobileSearch').onclick=()=>$('search').focus();
 if(supabase){supabase.auth.onAuthStateChange((_event,newSession)=>{session=newSession;setTimeout(async()=>{await refreshAuth();await refresh()},0)});await refreshAuth();await refresh()}else needConfig();
+
+const tutorialSteps=[
+ {icon:'▶',title:'Entdecke deinen Feed',copy:'Scrolle durch den Kurzvideo-Feed. Auf dem Handy kannst du zum nächsten Clip wischen oder scrollen.'},
+ {icon:'♡',title:'Like & kommentiere',copy:'Tippe auf das Herz, um ein Video zu liken. Über Kommentare kannst du dich freundlich mit anderen austauschen.'},
+ {icon:'＋',title:'Teile deinen eigenen Clip',copy:'Über „Hochladen“ kannst du ein Video auswählen und eine Beschreibung hinzufügen. Veröffentliche nur Inhalte, die du teilen darfst.'},
+ {icon:'♙',title:'Dein Profil & deine Community',copy:'Im Profil verwaltest du deine Angaben. Folge interessanten Creatorn und nutze „Melden“, wenn dir etwas problematisch vorkommt.'}
+];
+let tutorialIndex=0;
+function renderTutorial(){
+ const step=tutorialSteps[tutorialIndex];
+ $('tutorialIcon').textContent=step.icon;
+ $('tutorialTitle').textContent=step.title;
+ $('tutorialCopy').textContent=step.copy;
+ $('tutorialStep').textContent='SCHRITT '+(tutorialIndex+1)+' VON '+tutorialSteps.length;
+ $('tutorialProgress').style.width=((tutorialIndex+1)/tutorialSteps.length*100)+'%';
+ $('tutorialBack').disabled=tutorialIndex===0;
+ $('tutorialNext').textContent=tutorialIndex===tutorialSteps.length-1?'Fertig':'Weiter';
+}
+function openTutorial(){tutorialIndex=0;renderTutorial();modal('tutorialModal',true)}
+function closeTutorial(){modal('tutorialModal',false)}
+$('helpBtn').onclick=openTutorial;
+$('tutorialSkip').onclick=closeTutorial;
+$('tutorialBack').onclick=()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}};
+$('tutorialNext').onclick=()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()};
+$('tutorialModal').addEventListener('click',e=>{if(e.target===$('tutorialModal'))closeTutorial()});
 </script></body></html>
