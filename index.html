@@ -161,6 +161,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 }
 @media(prefers-reduced-motion:reduce){body:before,.brand{animation:none!important}}
 
+
+/* Subtle scroll reveal for feed cards */
+@media(prefers-reduced-motion:no-preference){
+  .feed>.post{opacity:0;transform:translateY(18px);transition:opacity .45s ease,transform .45s cubic-bezier(.2,.7,.2,1)}
+  .feed>.post.scroll-visible{opacity:1;transform:translateY(0)}
+}
 </style></head>
 <body>
 <header class="top"><div class="brand">snip<span>z</span></div><label class="search-wrap" aria-label="Snipz durchsuchen"><span aria-hidden="true">⌕</span><input id="search" class="search" type="search" autocomplete="off" placeholder="Videos & Creator suchen …"><button id="clearSearchTop" type="button" aria-label="Suche leeren" hidden>×</button></label><button class="btn" id="authBtn">Anmelden</button><button class="help-btn" id="helpBtn" aria-label="Snipz Tutorial öffnen" title="Tutorial">?</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
@@ -210,7 +216,25 @@ feed.innerHTML='';for(const p of data){const prof=p.profiles||{},name=prof.displ
 // Autoplay only the clip currently in view; pause clips when scrolling away.
 if(window.snipzVideoObserver)window.snipzVideoObserver.disconnect();
 window.snipzVideoObserver=new IntersectionObserver(entries=>{for(const entry of entries){const video=entry.target;if(entry.isIntersecting&&entry.intersectionRatio>=0.65){video.muted=true;video.play().catch(()=>{})}else video.pause()}},{root:feed,threshold:[0,0.65,1]});
+
 feed.querySelectorAll('video').forEach(video=>window.snipzVideoObserver.observe(video));
+// Reveal cards gently as they enter the feed's visible area.
+if(window.snipzRevealObserver)window.snipzRevealObserver.disconnect();
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  feed.querySelectorAll('.post').forEach(card=>card.classList.add('scroll-visible'));
+}else if('IntersectionObserver' in window){
+  window.snipzRevealObserver=new IntersectionObserver(entries=>{
+    for(const entry of entries){
+      if(entry.isIntersecting){
+        entry.target.classList.add('scroll-visible');
+        window.snipzRevealObserver.unobserve(entry.target);
+      }
+    }
+  },{root:feed,threshold:0.08,rootMargin:'0px 0px -3% 0px'});
+  feed.querySelectorAll('.post').forEach(card=>window.snipzRevealObserver.observe(card));
+}else{
+  feed.querySelectorAll('.post').forEach(card=>card.classList.add('scroll-visible'));
+}
 }
 async function refreshAuth(){if(needConfig())return;const {data}=await supabase.auth.getSession();session=data.session;try{await loadProfile()}catch(e){console.error(e);toast('Profil konnte nicht geladen werden.');} $('authBtn').textContent=session?'Abmelden':'Anmelden';$('logoutNav').style.display=session?'block':'none';}
 $('authBtn').onclick=async()=>{if(session){await supabase.auth.signOut();session=null;profile=null;await refresh();await refreshAuth();return}registerMode=false;updateAuthMode();modal('authModal',true)};
