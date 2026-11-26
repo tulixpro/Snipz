@@ -25,6 +25,39 @@ body{background:radial-gradient(ellipse at 50% -18%,#352044 0%,#111019 38%,var(-
 .post{border-color:#ffffff18}
 .avatar{background:linear-gradient(135deg,#ff356b,#8a5bff);box-shadow:0 0 18px #a65bff45}
 .search:focus,.field:focus,.dialog input:focus,.dialog textarea:focus{outline:2px solid #a36cff;outline-offset:1px}
+
+/* Snipz Blue / Dark design */
+:root{
+  color-scheme:dark;
+  --bg:#080d18;
+  --panel:#101a2b;
+  --muted:#9aaac2;
+  --pink:#2684ff;
+  --violet:#55b5ff;
+}
+body{
+  background:radial-gradient(ellipse at 50% -18%,#102c55 0%,#0b1424 42%,var(--bg) 76%);
+  color:#f4f8ff;
+}
+.top{background:#0a1220ed;border-bottom-color:#8bbdff20}
+.brand{
+  background:linear-gradient(100deg,#ffffff 22%,#83c4ff 58%,#2684ff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.brand span{color:inherit}
+.search,.field,.dialog input,.dialog textarea{background:#142238;border-color:#8bbdff26}
+.btn,.follow{background:#172943;border:1px solid #8bbdff28}
+.primary{background:linear-gradient(105deg,#1675f5,#36a7ff);box-shadow:0 5px 22px #1675f540}
+.nav.active,.nav:hover{background:#142d4d;color:#fff}
+.avatar{background:linear-gradient(135deg,#1675f5,#36b5ff);box-shadow:0 0 18px #2684ff45}
+.post,.panel{background:rgba(16,26,43,.94);border-color:#8bbdff20;box-shadow:0 12px 36px #0005}
+.media{background:#0b1729}
+.action.liked{color:#52aaff}
+.commentform button{background:#1675f5}
+.search:focus,.field:focus,.dialog input:focus,.dialog textarea:focus{outline-color:#48a5ff}
+.mobile{background:#0b1525f5;border-top-color:#8bbdff25}
+.notice{background:#17243a;border-color:#315783;color:#d6e9ff}
+.toast{background:#1b2e49;color:#f4f8ff}
 </style></head>
 <body>
 <header class="top"><div class="brand">snip<span>z</span></div><input id="search" class="search" placeholder="Videos suchen …"><button class="btn" id="authBtn">Anmelden</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
