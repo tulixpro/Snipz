@@ -1,29 +1,16 @@
 # Snipz
 
-Snipz ist eine Kurzvideo-Plattform mit vertikalem Feed, Profilen, Likes, Kommentaren und Uploads.
+Snipz ist eine Kurzvideo-Plattform mit vertikalem Feed, Creator-Profilen, Likes, Kommentaren, Suche und Upload-Oberfläche.
 
-## Projektstatus
+## Aktueller Stand
 
-Die Weboberfläche und das Cloudflare-Server-Grundgerüst liegen in diesem Repository. Der Server ist noch nicht live geschaltet. Die bisherigen Konten- und Medienfunktionen werden erst nach vollständiger Umstellung und Sicherheitstests aktiviert.
+- Die Frontend-Oberfläche wird auf dem Branch `design/blue-dark` vorbereitet.
+- Enthalten sind das responsive Blue-Dark-Design, Video-Feed-Oberfläche, Suchfeld, Creator-/Profiloberfläche und ein kurzes Onboarding-Tutorial.
+- Eine Web-App-Manifestdatei und ein SVG-Favicon ergänzen die Website-Grundausstattung.
+- **Der Server ist absichtlich noch nicht fertig und wurde für diese Frontend-Arbeiten nicht verändert.**
+- Konten, Feed-Daten, Uploads, Likes, Kommentare und Folgen funktionieren erst nach Einrichtung und Sicherheitstest des Backends.
 
-## Geplante Infrastruktur
-
-- Cloudflare Pages für die Website
-- Cloudflare Workers für die API
-- Cloudflare D1 als verwaltete Datenbank
-- Cloudflare R2 für Video- und Bilddateien
-- Turnstile, Rate Limits und Upload-Quoten gegen automatisierten Missbrauch
-
-## Sicherheit
-
-- Keine Datenbankpasswörter oder privaten Schlüssel im Browser oder Repository.
-- Anmeldung und Rollen werden serverseitig geprüft.
-- Admin-Rechte werden niemals aus Browser-Eingaben übernommen.
-- Uploads erhalten Größen- und Dateitypgrenzen sowie kurzlebige, serverseitig autorisierte Upload-Freigaben.
-- Moderation, Meldungen, Audit-Protokolle und Kontosperren müssen serverseitig umgesetzt und getestet werden.
-- Followerzahlen und automatische Verifizierung ab 1.000.000 Followern werden ausschließlich aus vertrauenswürdigen Daten berechnet.
-
-## Lokaler Start
+## Lokaler Start der Oberfläche
 
 Für die reine Weboberfläche kann ein statischer Server verwendet werden:
 
@@ -33,8 +20,26 @@ python -m http.server 8000
 
 Dann http://localhost:8000 öffnen.
 
-## Cloudflare-Einrichtung
+## Server später einrichten
 
-Siehe [cloudflare/README.md](cloudflare/README.md). Die dort beschriebene Worker-Datei ist aktuell nur ein Health-Check-Grundgerüst. Sie bietet noch keine fertige Anmeldung, Uploads, Feed-API oder Admin-Funktionen.
+Die Website enthält derzeit noch eine Supabase-Frontend-Anbindung mit Platzhaltern in `config.js`. Die Cloudflare-Dateien sind ein separates, noch unvollständiges Backend-Grundgerüst. Vor der Serverarbeit muss entschieden werden, ob Supabase weiterverwendet oder die Oberfläche vollständig auf die Cloudflare-API umgestellt wird. Beide Backends nicht gleichzeitig unkoordiniert aktivieren.
 
-Vor dem öffentlichen Start sind unter anderem Authentifizierung, Autorisierung, Upload-Schutz, Moderation, Backups, Monitoring, Datenschutz und Wiederherstellungstests erforderlich.
+Siehe [cloudflare/README.md](cloudflare/README.md) für den aktuellen Cloudflare-Plan.
+
+## Vor dem öffentlichen Start
+
+- [ ] Backend-Architektur festlegen (Supabase oder Cloudflare)
+- [ ] Anmeldung und Berechtigungen serverseitig absichern
+- [ ] Uploads mit Größen-, Typ-, Quoten- und Viren-/Missbrauchsprüfungen absichern
+- [ ] Feed, Suche, Likes, Kommentare und Folgen mit echten API-Daten verbinden
+- [ ] Moderation, Meldefunktion und Admin-Berechtigungen testen
+- [ ] Datenschutz, Kontolöschung und Datenexport ergänzen
+- [ ] Backups, Monitoring und Wiederherstellung testen
+- [ ] Browser- und Smartphone-Tests durchführen
+
+## Sicherheit
+
+- Keine Datenbankpasswörter, Service-Role-Schlüssel oder privaten Tokens im Browser oder Repository.
+- Admin-Rechte niemals aus Browser-Eingaben übernehmen.
+- Uploads nur über serverseitig autorisierte, kurzlebige Freigaben.
+- Moderation, Meldungen, Audit-Protokolle und Kontosperren müssen serverseitig umgesetzt werden.
