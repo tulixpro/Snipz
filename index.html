@@ -205,9 +205,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 @keyframes offlineIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:600px){.offline-banner{top:60px;margin-top:7px;padding:9px 11px}.offline-banner small{max-width:245px}}
 @media(prefers-reduced-motion:reduce){.offline-banner{animation:none}}
+
+/* PWA install affordance */
+.install-app-btn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border-color:#4b8ac4;background:linear-gradient(110deg,#16365a,#142b49);color:#e4f3ff}
+.install-app-btn[hidden]{display:none}
+.install-app-btn:hover{box-shadow:0 0 18px #2684ff35}
+@media(max-width:600px){.install-app-btn{padding:8px 10px;font-size:12px}.install-app-btn span{display:none}}
 </style></head>
 <body>
-<header class="top"><div class="brand">snip<span>z</span></div><label class="search-wrap" aria-label="Snipz durchsuchen"><span aria-hidden="true">⌕</span><input id="search" class="search" type="search" autocomplete="off" placeholder="Videos & Creator suchen …"><button id="clearSearchTop" type="button" aria-label="Suche leeren" hidden>×</button></label><button class="btn" id="authBtn">Anmelden</button><button class="help-btn" id="helpBtn" aria-label="Snipz Tutorial öffnen" title="Tutorial">?</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
+<header class="top"><div class="brand">snip<span>z</span></div><label class="search-wrap" aria-label="Snipz durchsuchen"><span aria-hidden="true">⌕</span><input id="search" class="search" type="search" autocomplete="off" placeholder="Videos & Creator suchen …"><button id="clearSearchTop" type="button" aria-label="Suche leeren" hidden>×</button></label><button class="btn" id="authBtn">Anmelden</button><button class="btn install-app-btn" id="installAppBtn" type="button" hidden>↓ <span>App installieren</span></button><button class="help-btn" id="helpBtn" aria-label="Snipz Tutorial öffnen" title="Tutorial">?</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
 <div id="offlineBanner" class="offline-banner" role="status" aria-live="polite" hidden><span class="offline-dot"></span><span><b>Du bist offline</b><small>Die Verbindung fehlt. Neue Inhalte und Aktionen brauchen Internet.</small></span><span class="offline-pill">OFFLINE</span></div>
 <div id="setupNotice" class="notice" hidden>Snipz wird gerade sicher eingerichtet. Konten, Uploads und Interaktionen sind erst verfügbar, wenn der neue Server vollständig eingerichtet und getestet ist.</div>
 <div class="layout"><aside class="side"><div class="nav active">⌂ <span class="label"> Für dich</span></div><div class="nav">◎ <span class="label"> Entdecken</span></div><div class="nav" id="sideUpload">＋ <span class="label"> Hochladen</span></div><div class="nav" id="profileNav">♙ <span class="label"> Mein Profil</span></div><div class="nav" id="logoutNav">↪ <span class="label"> Abmelden</span></div></aside>
@@ -243,6 +249,15 @@ const configured=SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('YO
 const supabase=configured?createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 let session=null,profile=null,registerMode=false,following=new Set();
 const $=id=>document.getElementById(id),feed=$('feed');
+/* Installable Snipz PWA */
+let deferredInstallPrompt=null;
+const installAppBtn=$('installAppBtn');
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+function syncInstallButton(){if(installAppBtn)installAppBtn.hidden=isStandalone()||(!deferredInstallPrompt&&!/iphone|ipad|ipod/i.test(navigator.userAgent));}
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;syncInstallButton()});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;syncInstallButton();toast('Snipz wurde installiert!')});
+if(installAppBtn){installAppBtn.addEventListener('click',async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();const choice=await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;syncInstallButton();if(choice.outcome==='accepted')toast('Snipz wird installiert.');return}if(/iphone|ipad|ipod/i.test(navigator.userAgent)){toast('Tippe auf „Teilen“ und dann auf „Zum Home-Bildschirm“.')}else toast('Nutze im Browser-Menü „App installieren“ oder „Zum Startbildschirm hinzufügen“.')});syncInstallButton()}
+
 const offlineBanner=$('offlineBanner');
 function updateNetworkStatus(){if(offlineBanner)offlineBanner.hidden=navigator.onLine; if(!navigator.onLine&&offlineBanner)offlineBanner.setAttribute('aria-label','Offline: keine Internetverbindung');}
 window.addEventListener('online',()=>{updateNetworkStatus();toast('Du bist wieder online!');});
