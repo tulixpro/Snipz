@@ -195,9 +195,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   .feed>.post.scroll-visible .media video{transform:scale(1)}
 }
 @keyframes snipzCardSweep{0%{transform:translateX(-130%);opacity:0}18%{opacity:1}100%{transform:translateX(130%);opacity:0}}
+
+/* Offline connection status */
+.offline-banner{position:sticky;top:68px;z-index:6;display:flex;align-items:center;gap:11px;margin:10px auto 0;width:min(850px,calc(100% - 24px));padding:11px 14px;border:1px solid #477bb4;border-radius:14px;background:linear-gradient(110deg,#142c49f5,#10213af5);box-shadow:0 8px 26px #0005,0 0 22px #2684ff18;color:#e5f2ff;animation:offlineIn .35s ease both}
+.offline-banner[hidden]{display:none}
+.offline-banner small{display:block;color:#a9c5e4;font-size:12px;margin-top:1px}
+.offline-dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:#ffbf55;box-shadow:0 0 12px #ffbf5577}
+.offline-pill{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.1em;color:#ffd995;background:#523d1d;padding:5px 8px;border-radius:20px}
+@keyframes offlineIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.offline-banner{top:60px;margin-top:7px;padding:9px 11px}.offline-banner small{max-width:245px}}
+@media(prefers-reduced-motion:reduce){.offline-banner{animation:none}}
 </style></head>
 <body>
 <header class="top"><div class="brand">snip<span>z</span></div><label class="search-wrap" aria-label="Snipz durchsuchen"><span aria-hidden="true">⌕</span><input id="search" class="search" type="search" autocomplete="off" placeholder="Videos & Creator suchen …"><button id="clearSearchTop" type="button" aria-label="Suche leeren" hidden>×</button></label><button class="btn" id="authBtn">Anmelden</button><button class="help-btn" id="helpBtn" aria-label="Snipz Tutorial öffnen" title="Tutorial">?</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
+<div id="offlineBanner" class="offline-banner" role="status" aria-live="polite" hidden><span class="offline-dot"></span><span><b>Du bist offline</b><small>Die Verbindung fehlt. Neue Inhalte und Aktionen brauchen Internet.</small></span><span class="offline-pill">OFFLINE</span></div>
 <div id="setupNotice" class="notice" hidden>Snipz wird gerade sicher eingerichtet. Konten, Uploads und Interaktionen sind erst verfügbar, wenn der neue Server vollständig eingerichtet und getestet ist.</div>
 <div class="layout"><aside class="side"><div class="nav active">⌂ <span class="label"> Für dich</span></div><div class="nav">◎ <span class="label"> Entdecken</span></div><div class="nav" id="sideUpload">＋ <span class="label"> Hochladen</span></div><div class="nav" id="profileNav">♙ <span class="label"> Mein Profil</span></div><div class="nav" id="logoutNav">↪ <span class="label"> Abmelden</span></div></aside>
 <main><div class="feedhead" id="feedhead">Für dich · Kurzvideos</div><section class="feed" id="feed"><div class="empty">Feed wird geladen …</div></section></main>
@@ -232,6 +243,13 @@ const configured=SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('YO
 const supabase=configured?createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 let session=null,profile=null,registerMode=false,following=new Set();
 const $=id=>document.getElementById(id),feed=$('feed');
+const offlineBanner=$('offlineBanner');
+function updateNetworkStatus(){if(offlineBanner)offlineBanner.hidden=navigator.onLine; if(!navigator.onLine&&offlineBanner)offlineBanner.setAttribute('aria-label','Offline: keine Internetverbindung');}
+window.addEventListener('online',()=>{updateNetworkStatus();toast('Du bist wieder online!');});
+window.addEventListener('offline',updateNetworkStatus);
+updateNetworkStatus();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Offline-Unterstützung konnte nicht gestartet werden:',err));});}
+
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2600)}
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function modal(id,show){$(id).classList.toggle('show',show)}
