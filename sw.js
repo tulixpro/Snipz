@@ -1,5 +1,5 @@
 const CACHE_NAME='snipz-shell-v1';
-const APP_SHELL=['./','./index.html','./offline.html','./manifest.webmanifest','./favicon.svg','./config.js'];
+const APP_SHELL=['./','./index.html','./offline.html','./manifest.webmanifest','./favicon.svg','./app-icon.svg','./config.js'];
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE_NAME);await Promise.all(APP_SHELL.map(async path=>{try{await cache.add(path)}catch(error){console.warn('Snipz cache skipped:',path,error)}}));await self.skipWaiting()})())});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith('snipz-shell-')&&key!==CACHE_NAME).map(key=>caches.delete(key)));await self.clients.claim()})())});
 self.addEventListener('fetch',event=>{const request=event.request;if(request.method!=='GET')return;const url=new URL(request.url);if(url.origin!==self.location.origin)return;
