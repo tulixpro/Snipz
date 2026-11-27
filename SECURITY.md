@@ -6,6 +6,10 @@ The Worker intentionally exposes only a health check. It has no login, user data
 
 Do not connect real users or upload personal media until the controls below are implemented, reviewed and tested. A successful health check is not a security audit.
 
+## Additional API baseline
+
+The API Worker also sends restrictive browser/API headers (including no-sniff, no-referrer, frame denial, a deny-all CSP, no-store, and cross-origin isolation hints). HSTS is limited to the Worker host rather than using `includeSubDomains` or `preload`, which could unintentionally affect unrelated subdomains. See [the negative security test plan](./cloudflare/SECURITY-TEST-PLAN.md).
+
 ## Required before any real-user pilot
 
 ### Identity and sessions
