@@ -264,6 +264,8 @@ int main() {
     int menuFPS = fpsLimit;
     int activeGamepad=-1;
     bool previousPadMine=false, previousPadPlace=false;
+    float miningTimer=0.0f;
+    int miningTarget=-1;
 
     Camera3D camera={};
     camera.position={worldSize/2.0f,12.0f,worldSize/2.0f+18};
@@ -391,7 +393,7 @@ int main() {
                 else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
             }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
-            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | LMB mine | RMB build"; messageTime=5; }
+            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | Hold LMB to mine | RMB build"; messageTime=5; }
             if (!commandOpen) {
                 Vector2 mouse=GetMouseDelta();
                 yaw += mouse.x*(mouseSensitivity/10000.0f);
@@ -498,7 +500,7 @@ int main() {
                     padMine=IsGamepadButtonDown(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_2) || rt>0.35f;
                     padPlace=IsGamepadButtonDown(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_2) || lt>0.35f;
                 }
-                bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || (padMine && !previousPadMine);
+                bool minePressed=IsMouseButtonDown(MOUSE_BUTTON_LEFT) || padMine;
                 bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || (padPlace && !previousPadPlace);
                 previousPadMine=padMine; previousPadPlace=padPlace;
             if(minePressed || placePressed) {
@@ -509,14 +511,26 @@ int main() {
                         RayCollision c=GetRayCollisionBox(ray,box);
                         if(c.hit && c.distance<=8.0f && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
                     }
-                    if(hit>=0 && minePressed) { blocks.erase(blocks.begin()+hit); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
+                    if(hit>=0 && minePressed) {
+                        if(miningTarget!=hit) { miningTarget=hit; miningTimer=0.0f; }
+                        miningTimer+=dt;
+                        if(miningTimer>=0.22f) {
+                            blocks.erase(blocks.begin()+hit);
+                            miningTarget=-1; miningTimer=0.0f;
+                            RebuildHeightMap(blocks,worldSize,groundHeights);
+                            if(worldModelReady) UnloadModel(worldModel);
+                            worldModel=BuildWorldModel(blocks,worldSize);
+                            worldModelReady=true;
+                        }
+                    }
                     else if(hit>=0 && placePressed) {
+                        miningTarget=-1; miningTimer=0.0f;
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
                         if(!occupied && p.y>=0 && p.y<63 && Vector3Distance(p,camera.position)>1.4f) { blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     }
-                }
+                } else { miningTarget=-1; miningTimer=0.0f; }
             }
         } else if (screen==PLAYING && commandOpen) {
             int ch=GetCharPressed();
@@ -573,6 +587,11 @@ int main() {
             int cx=GetScreenWidth()/2, cy=GetScreenHeight()/2;
             DrawLine(cx-12,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+12,cy,WHITE);
             DrawLine(cx,cy-12,cx,cy-4,WHITE); DrawLine(cx,cy+4,cx,cy+12,WHITE);
+            if(miningTimer>0.0f) {
+                float progress=Clamp(miningTimer/0.22f,0.0f,1.0f);
+                DrawRectangle(cx-34,cy+22,68,7,Fade(BLACK,.72f));
+                DrawRectangle(cx-34,cy+22,(int)(68.0f*progress),7,Color{255,205,92,255});
+            }
             int start=(GetScreenWidth()-paletteCount*62)/2, hotY=GetScreenHeight()-76;
             DrawRectangleRounded({(float)start-8,(float)hotY-7,(float)paletteCount*62+16,64},.12f,8,Fade(BLACK,.72f));
             for(int i=0;i<paletteCount;i++) {
@@ -581,7 +600,7 @@ int main() {
                 DrawRectangle(x+8,hotY+6,38,25,palette[i]);
                 DrawText(TextFormat("%d",i+1),x+22,hotY+33,12,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | LMB MINE | RMB PLACE | WHEEL BLOCK | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | HOLD LMB MINE | RMB PLACE | WHEEL BLOCK | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
