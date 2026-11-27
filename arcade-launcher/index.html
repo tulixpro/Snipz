@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080d1b">
-  <meta name="description" content="RetroVault – eine Bibliothek für kostenlose PC-Spiele und offizielle Emulator-Projekte.">
+  <meta name="description" content="RetroVault – Gaming-Bibliothek mit Retro-Simulator-Demo und offiziellen Projektlinks.">
   <title>RetroVault — Deine Spielebibliothek</title>
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -12,16 +12,16 @@
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
   <header class="topbar">
     <a class="brand" href="#" aria-label="RetroVault Startseite"><span class="brand-mark">RV</span><span>RETRO<span class="brand-accent">VAULT</span></span></a>
-    <nav><a href="#library">Spiele</a><a href="#emulators">Emulatoren</a><a href="#controller">Controller</a><a href="#launcher">Launcher</a></nav>
-    <a class="top-cta" href="#library">Bibliothek öffnen <span>↗</span></a>
+    <nav><a href="#library">Spiele</a><a href="#simulator">Retro-Simulator</a><a href="#emulators">Emulatoren</a><a href="#controller">Controller</a></nav>
+    <a class="top-cta" href="#simulator">Simulator öffnen <span>↗</span></a>
   </header>
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="pulse"></span> DEINE NÄCHSTE GAMING-SESSION BEGINNT HIER</div>
+        <div class="eyebrow"><span class="pulse"></span> DEINE RETRO-GAMING-SESSION BEGINNT HIER</div>
         <h1>Legenden spielen.<br><span>Neue entdecken.</span></h1>
-        <p class="hero-text">Deine Gaming-Sammlung für kostenlose PC-Spiele, Retro-Systeme und Controller. Emulatoren kommen von ihren offiziellen Entwicklerseiten.</p>
-        <div class="hero-actions"><a class="button button-primary" href="#library">Spiele entdecken <span>↓</span></a><a class="button button-quiet" href="#emulators">Emulatoren ansehen</a></div>
+        <p class="hero-text">Deine Gaming-Sammlung für kostenlose PC-Spiele, Retro-Systeme und Controller. Entdecke die Retro-Simulator-Demo und offizielle Emulator-Projekte.</p>
+        <div class="hero-actions"><a class="button button-primary" href="#library">Spiele entdecken <span>↓</span></a><a class="button button-quiet" href="#simulator">Retro-Simulator öffnen</a></div>
         <div class="hero-meta"><span>✦ Offizielle Quellen</span><span>✦ Controller-freundlich</span></div>
       </div>
       <div class="hero-art" aria-label="Abstrakte Gaming-Grafik">
@@ -31,46 +31,64 @@
         <div class="float-chip">✦ GAMEPAD READY</div>
       </div>
     </section>
-    <section class="stats"><div><strong>05</strong><span>Gratis-Spiele</span></div><div><strong>06</strong><span>Emulator-Projekte</span></div><div><strong>PC</strong><span>Desktop-Bibliothek</span></div></section>
+    <section class="stats"><div><strong>05</strong><span>Gratis-Spiele</span></div><div><strong>06</strong><span>Emulator-Projekte</span></div><div><strong>DEMO</strong><span>Retro-Simulator</span></div></section>
 
     <section class="library-section" id="library">
       <div class="section-heading"><div><div class="eyebrow">THE COLLECTION</div><h2>Finde dein nächstes Spiel.</h2><p>Kostenlose Spiele mit offiziellen Downloadseiten.</p></div><span class="collection-count" id="result-count">05 SPIELE</span></div>
       <div class="filters"><label class="search-box"><span>⌕</span><input id="search" type="search" placeholder="Spiel suchen …" autocomplete="off"></label><div class="filter-pills" role="group" aria-label="Spielkategorie"><button class="filter active" data-filter="all">Alle</button><button class="filter" data-filter="racing">Racing</button><button class="filter" data-filter="strategy">Strategie</button><button class="filter" data-filter="adventure">Abenteuer</button></div></div>
       <div class="game-grid" id="game-grid">
-        <article class="game-card" data-name="supertuxkart kart racing rennen" data-category="racing"><div class="cover cover-kart"><span class="cover-label">RACING</span><div class="kart-art">🏁</div><span class="cover-title">SUPER<br>TUXKART</span><span class="cover-index">01 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>SuperTuxKart</h3><p>Rasanter Kart-Spaß mit Strecken, Charakteren und verschiedenen Spielmodi.</p><a class="download-link" href="https://supertuxkart.github.io/stk-website/Download" target="_blank" rel="noopener noreferrer">Offiziell herunterladen <span>↗</span></a></div></article>
-        <article class="game-card" data-name="openttd transport tycoon simulation" data-category="strategy"><div class="cover cover-transport"><span class="cover-label">SIMULATION</span><div class="train-art">🚂</div><span class="cover-title">OPEN<br>TTD</span><span class="cover-index">02 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>OpenTTD</h3><p>Baue dein eigenes Transport-Imperium mit Zügen, Straßen und Flugzeugen.</p><a class="download-link" href="https://www.openttd.org/downloads/openttd-releases/latest.html" target="_blank" rel="noopener noreferrer">Offiziell herunterladen <span>↗</span></a></div></article>
-        <article class="game-card" data-name="supertux jump run platformer" data-category="adventure"><div class="cover cover-tux"><span class="cover-label">PLATFORMER</span><div class="kart-art">🐧</div><span class="cover-title">SUPER<br>TUX</span><span class="cover-index">03 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>SuperTux</h3><p>Ein klassisches Jump ’n’ Run mit Tux, Geheimnissen und Retro-Feeling.</p><a class="download-link" href="https://www.supertux.org/download.html" target="_blank" rel="noopener noreferrer">Offiziell herunterladen <span>↗</span></a></div></article>
-        <article class="game-card" data-name="0ad zero ad strategy ancient" data-category="strategy"><div class="cover cover-0ad"><span class="cover-label">STRATEGIE</span><div class="kart-art">🏛️</div><span class="cover-title">0 A.D.</span><span class="cover-index">04 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>0 A.D.</h3><p>Ein historisches Echtzeit-Strategiespiel mit Städten, Armeen und Handel.</p><a class="download-link" href="https://play0ad.com/download/" target="_blank" rel="noopener noreferrer">Offiziell herunterladen <span>↗</span></a></div></article>
-        <article class="game-card" data-name="luanti minetest voxel sandbox" data-category="adventure"><div class="cover cover-luanti"><span class="cover-label">SANDBOX</span><div class="kart-art">🧱</div><span class="cover-title">LUANTI</span><span class="cover-index">05 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>Luanti</h3><p>Eine offene Voxel-Spielwelt zum Bauen, Erkunden und Spielen mit anderen.</p><a class="download-link" href="https://www.luanti.org/downloads/" target="_blank" rel="noopener noreferrer">Offiziell herunterladen <span>↗</span></a></div></article>
+        <article class="game-card" data-name="supertuxkart kart racing rennen" data-category="racing"><div class="cover cover-kart"><span class="cover-label">RACING</span><div class="kart-art">🏁</div><span class="cover-title">SUPER<br>TUXKART</span><span class="cover-index">01 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>SuperTuxKart</h3><p>Rasanter Kart-Spaß mit Strecken, Charakteren und verschiedenen Spielmodi.</p><a class="download-link" href="https://supertuxkart.github.io/stk-website/Download" target="_blank" rel="noopener noreferrer">Offizielle Projektseite <span>↗</span></a></div></article>
+        <article class="game-card" data-name="openttd transport tycoon simulation" data-category="strategy"><div class="cover cover-transport"><span class="cover-label">SIMULATION</span><div class="train-art">🚂</div><span class="cover-title">OPEN<br>TTD</span><span class="cover-index">02 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>OpenTTD</h3><p>Baue dein eigenes Transport-Imperium mit Zügen, Straßen und Flugzeugen.</p><a class="download-link" href="https://www.openttd.org/downloads/openttd-releases/latest.html" target="_blank" rel="noopener noreferrer">Offizielle Projektseite <span>↗</span></a></div></article>
+        <article class="game-card" data-name="supertux jump run platformer" data-category="adventure"><div class="cover cover-tux"><span class="cover-label">PLATFORMER</span><div class="kart-art">🐧</div><span class="cover-title">SUPER<br>TUX</span><span class="cover-index">03 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>SuperTux</h3><p>Ein klassisches Jump ’n’ Run mit Tux, Geheimnissen und Retro-Feeling.</p><a class="download-link" href="https://www.supertux.org/download.html" target="_blank" rel="noopener noreferrer">Offizielle Projektseite <span>↗</span></a></div></article>
+        <article class="game-card" data-name="0ad zero ad strategy ancient" data-category="strategy"><div class="cover cover-0ad"><span class="cover-label">STRATEGIE</span><div class="kart-art">🏛️</div><span class="cover-title">0 A.D.</span><span class="cover-index">04 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>0 A.D.</h3><p>Ein historisches Echtzeit-Strategiespiel mit Städten, Armeen und Handel.</p><a class="download-link" href="https://play0ad.com/download/" target="_blank" rel="noopener noreferrer">Offizielle Projektseite <span>↗</span></a></div></article>
+        <article class="game-card" data-name="luanti minetest voxel sandbox" data-category="adventure"><div class="cover cover-luanti"><span class="cover-label">SANDBOX</span><div class="kart-art">🧱</div><span class="cover-title">LUANTI</span><span class="cover-index">05 / 05</span></div><div class="game-info"><div class="game-topline"><span>OPEN SOURCE</span><span>WIN · MAC · LINUX</span></div><h3>Luanti</h3><p>Eine offene Voxel-Spielwelt zum Bauen, Erkunden und Spielen mit anderen.</p><a class="download-link" href="https://www.luanti.org/downloads/" target="_blank" rel="noopener noreferrer">Offizielle Projektseite <span>↗</span></a></div></article>
       </div>
       <div class="empty-state" id="empty-state" hidden>Keine Spiele gefunden. Versuch einen anderen Suchbegriff.</div>
       <p class="source-note">RetroVault hostet keine Spieldateien. Downloads und Lizenzen werden von den jeweiligen Entwicklerteams verwaltet.</p>
     </section>
 
+    <section class="simulator-section" id="simulator">
+      <div class="section-heading"><div><div class="eyebrow">RETROVAULT ARCADE LAB</div><h2>Retro-Simulator.</h2><p>Eine kleine interaktive Retro-Konsole direkt im Browser.</p></div><span class="collection-count">BROWSER-DEMO</span></div>
+      <div class="simulator-shell">
+        <div class="simulator-screen">
+          <div class="sim-topline"><span>RETROVAULT BIOS v0.1</span><span id="sim-led">● STANDBY</span></div>
+          <div class="sim-screen-content"><div class="sim-logo">RV<span>_</span></div><h3 id="sim-title">READY PLAYER ONE</h3><p id="sim-message">Wähle ein System und starte die Demo.</p><div class="sim-progress"><span id="sim-progress"></span></div><div class="sim-prompt" id="sim-prompt">PRESS START TO BEGIN</div></div>
+          <div class="sim-bottomline"><span>DEMO MODE</span><span>NO GAME ROMS INCLUDED</span></div>
+        </div>
+        <div class="sim-controls">
+          <label for="sim-system">SYSTEM AUSWÄHLEN</label>
+          <select id="sim-system"><option value="arcade">Arcade Classics</option><option value="ps1">PlayStation 1</option><option value="ps2">PlayStation 2</option><option value="handheld">Handheld Retro</option><option value="8bit">8-Bit Console</option></select>
+          <button class="button button-primary sim-start" id="sim-start" type="button">▶ Demo starten</button>
+          <button class="button button-quiet sim-reset" id="sim-reset" type="button">↺ Zurücksetzen</button>
+          <p class="sim-disclaimer">Das ist eine animierte Oberfläche zum Ausprobieren – kein echter Konsolen-Emulator. Es werden keine Spiele geladen oder ausgeführt.</p>
+        </div>
+      </div>
+    </section>
+
     <section class="emulator-section" id="emulators">
-      <div class="section-heading"><div><div class="eyebrow">EMULATION STATION</div><h2>Deine Retro-Systeme.</h2><p>Hier findest du offizielle Emulator-Projekte für deinen eigenen PC.</p></div><span class="collection-count">OFFIZIELLE LINKS</span></div>
+      <div class="section-heading"><div><div class="eyebrow">EMULATION STATION</div><h2>Deine Retro-Systeme.</h2><p>Offizielle Projektseiten für Emulator-Software. Die Demo oben führt keine Konsolenspiele aus.</p></div><span class="collection-count">OFFIZIELLE LINKS</span></div>
       <div class="emulator-grid">
         <article class="emulator-card"><span class="system-tag">PLAYSTATION 1</span><h3>DuckStation</h3><p>Emulator-Projekt für PS1-Spiele.</p><a href="https://www.duckstation.org/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
         <article class="emulator-card"><span class="system-tag">PLAYSTATION 2</span><h3>PCSX2</h3><p>Bekanntes PS2-Emulator-Projekt für Desktop-PCs.</p><a href="https://pcsx2.net/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
         <article class="emulator-card"><span class="system-tag">PSP</span><h3>PPSSPP</h3><p>PSP-Emulator für mehrere Desktop- und Mobil-Plattformen.</p><a href="https://www.ppsspp.org/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
-        <article class="emulator-card"><span class="system-tag">PLAYSTATION 3</span><h3>RPCS3</h3><p>Aktives PS3-Emulator-Projekt; Kompatibilität hängt vom Spiel und PC ab.</p><a href="https://rpcs3.net/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
-        <article class="emulator-card"><span class="system-tag">XBOX 360</span><h3>Xenia</h3><p>Experimenteller Xbox-360-Emulator. Viele Spiele laufen nicht fehlerfrei.</p><a href="https://xenia.jp/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
+        <article class="emulator-card"><span class="system-tag">PLAYSTATION 3</span><h3>RPCS3</h3><p>PS3-Emulator-Projekt; Kompatibilität hängt vom Spiel und PC ab.</p><a href="https://rpcs3.net/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
+        <article class="emulator-card"><span class="system-tag">XBOX 360</span><h3>Xenia</h3><p>Experimenteller Xbox-360-Emulator. Kompatibilität ist unterschiedlich.</p><a href="https://xenia.jp/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
         <article class="emulator-card"><span class="system-tag">MEHRERE SYSTEME</span><h3>RetroArch</h3><p>Eine gemeinsame Oberfläche für viele Retro-Emulator-Kerne.</p><a href="https://www.retroarch.com/" target="_blank" rel="noopener noreferrer">Projektseite öffnen ↗</a></article>
       </div>
-      <div class="notice"><strong>Und Xbox One?</strong> Dafür gibt es derzeit keinen allgemein nutzbaren PC-Emulator, den wir hier seriös als fertigen Download anbieten können. Die Emulatoren selbst enthalten keine Spiele. Nutze nur Spiele und Systemdateien, die du rechtmäßig verwenden darfst; RetroVault stellt keine BIOS-, Firmware-, Schlüssel- oder Spieldateien bereit.</div>
+      <div class="notice"><strong>Hinweis:</strong> RetroVault verteilt keine Spiele-, BIOS-, Firmware- oder Schlüsseldateien. Verwende nur Inhalte, die du rechtmäßig nutzen darfst. Für Installationen bitte mit einem Elternteil prüfen.</div>
     </section>
 
     <section class="controller-section" id="controller">
-      <div class="controller-copy"><div class="eyebrow">PLAYER TWO, CONNECTED?</div><h2>Controller anschließen.<br><span>Los geht’s.</span></h2><p>RetroVault kann Gamepads im Browser erkennen und damit durch die Seite navigieren. Fürs Spielen selbst muss der jeweilige Emulator den Controller unterstützen und eingerichtet werden.</p><div class="controller-status" id="controller-status" role="status" aria-live="polite"><span class="status-dot"></span> Noch kein Controller erkannt</div><p class="controller-help">Verbinde deinen Controller per USB oder Bluetooth und drücke eine Taste. D-Pad / Stick: Fokus bewegen · A / Kreuz: auswählen · B / Kreis: zurück.</p></div>
+      <div class="controller-copy"><div class="eyebrow">PLAYER TWO, CONNECTED?</div><h2>Controller anschließen.<br><span>Los geht’s.</span></h2><p>RetroVault kann Gamepads im Browser erkennen und damit durch die Seite navigieren. Für echte Spiele muss die jeweilige Software den Controller unterstützen.</p><div class="controller-status" id="controller-status" role="status" aria-live="polite"><span class="status-dot"></span> Noch kein Controller erkannt</div><p class="controller-help">D-Pad / Stick: Fokus bewegen · A / Kreuz: auswählen · B / Kreis: zurück.</p></div>
       <div class="controller-art"><div class="pad-shape"><div class="pad-cross">✣</div><div class="pad-center"><span>SELECT</span><b>RV</b><span>START</span></div><div class="pad-buttons"><i></i><i></i><i></i><i></i></div></div><span class="controller-chip">GAMEPAD API</span></div>
     </section>
 
     <section class="launcher-section" id="launcher">
-      <div class="launcher-panel"><div class="launcher-copy"><div class="eyebrow">DESKTOP APP PROTOTYPE</div><h2>Deine Bibliothek.<br><span>Ein eigener Launcher.</span></h2><p>Der RetroVault-Launcher für Windows bündelt Spiele und offizielle Emulator-Projektseiten. Er installiert keine Emulatoren oder Spiele automatisch und lädt keine BIOS- oder Firmware-Dateien herunter.</p><div class="launcher-status"><span class="status-dot"></span> PROTOTYP — INSTALLER-BUILD WIRD GEPRÜFT</div></div><div class="launcher-preview"><div class="window-bar"><i></i><i></i><i></i><span>RETROVAULT DESKTOP</span></div><div class="preview-content"><div class="preview-side"><b>RV</b><span>LIBRARY</span><span>SYSTEMS</span></div><div class="preview-main"><small>YOUR COLLECTION</small><strong>Ready to play?</strong><div class="preview-cards"><div>🏁<span>SuperTuxKart</span></div><div>🎮<span>Retro systems</span></div></div></div></div></div></div>
+      <div class="launcher-panel"><div class="launcher-copy"><div class="eyebrow">DESKTOP APP PROTOTYPE</div><h2>Deine Bibliothek.<br><span>Ein eigener Launcher.</span></h2><p>Der RetroVault-Launcher für Windows bündelt Spiele und offizielle Emulator-Projektseiten. Er installiert keine Emulatoren oder Spiele automatisch.</p><div class="launcher-status"><span class="status-dot"></span> PROTOTYP — BUILD-STATUS AUF GITHUB</div></div><div class="launcher-preview"><div class="window-bar"><i></i><i></i><i></i><span>RETROVAULT DESKTOP</span></div><div class="preview-content"><div class="preview-side"><b>RV</b><span>LIBRARY</span><span>SYSTEMS</span></div><div class="preview-main"><small>YOUR COLLECTION</small><strong>Ready to play?</strong><div class="preview-cards"><div>🏁<span>SuperTuxKart</span></div><div>🎮<span>Retro systems</span></div></div></div></div></div></div>
     </section>
-    <section class="about-section" id="about"><div><div class="eyebrow">GOOD GAMES, GOOD SOURCES</div><h2>Spielen, ohne dubiose Downloads.</h2></div><p>Wir verlinken auf offizielle Seiten. RetroVault verteilt keine fremden Spielekopien, umgeht keine Bezahlschranken und verspricht keine Downloads, die wir nicht selbst bereitstellen dürfen.</p></section>
+    <section class="about-section"><div><div class="eyebrow">GOOD GAMES, GOOD SOURCES</div><h2>Spielen, ohne dubiose Downloads.</h2></div><p>Wir verlinken auf offizielle Seiten. RetroVault verteilt keine fremden Spielekopien und bietet keine Downloads an, die wir nicht selbst bereitstellen dürfen.</p></section>
   </main>
-  <footer><a class="brand" href="#"><span class="brand-mark">RV</span><span>RETRO<span class="brand-accent">VAULT</span></span></a><span>Ein unabhängiges Fan-Projekt · Nicht mit den Spieleentwicklern verbunden.</span><span>© 2026 RetroVault</span></footer>
+  <footer><a class="brand" href="#"><span class="brand-mark">RV</span><span>RETRO<span class="brand-accent">VAULT</span></span></a><span>Ein unabhängiges Fan-Projekt · Nicht mit Spieleentwicklern verbunden.</span><span>© 2026 RetroVault</span></footer>
   <script src="./renderer.js"></script>
 </body>
 </html>
