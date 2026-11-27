@@ -131,7 +131,8 @@ int main() {
     InitWindow(W,H,"BLOCKLANDS");
     if (!IsWindowReady()) return 1;
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
-    if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }\n    else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
+    if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }
+    else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
 
     enum Screen { MAIN_MENU, PLAYING, PAUSED, WORLD_MENU, SETTINGS };
     Screen screen = MAIN_MENU;
@@ -357,13 +358,13 @@ int main() {
                     if(menuFPS==60) menuFPS=120; else if(menuFPS==120) menuFPS=144; else if(menuFPS==144) menuFPS=0; else menuFPS=60;
                     SetTargetFPS(menuFPS<=0?0:menuFPS);
                 }
-                DrawText("Display settings are read from settings.ini",(int)cx-190,365,15,LIGHTGRAY);
+                DrawText("LOW: 960x540  |  NORMAL: 1280x720  |  HIGH: 1600x900",(int)cx-250,435,14,LIGHTGRAY);
                 if(button({cx-155,445,310,54},"BACK")) screen=settingsReturn;
             }
         }
         EndDrawing();
     }
-    { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\\nheight="<<GetScreenHeight()<<"\\nfps="<<menuFPS<<"\\nfullscreen="<<fullscreen<<"\\ngraphics="<<graphicsQuality<<"\\n"; }
+    { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\nheight="<<GetScreenHeight()<<"\nfps="<<menuFPS<<"\nfullscreen="<<fullscreen<<"\ngraphics="<<graphicsQuality<<"\n"; }
     if(worldModelReady) UnloadModel(worldModel);
     EnableCursor();
     CloseWindow();
