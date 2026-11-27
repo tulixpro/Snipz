@@ -23,11 +23,11 @@ static float noise2(int x, int z, int seed) {
 static const Color palette[] = {
     {92,176,88,255}, {130,105,78,255}, {115,125,140,255},
     {190,160,90,255}, {80,145,180,255}, {190,190,195,255},
-    {65,120,65,255}, {150,90,65,255}
+    {65,120,65,255}, {150,90,65,255}, {235,82,24,255}
 };
-static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick"};
+static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick","Lava"};
 static const char* worldNames[] = {"Green Valley","Flatlands","Highlands","Island"};
-static const int paletteCount = 8;
+static const int paletteCount = 9;
 
 static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::vector<int>& heights) {
     heights.assign(size * size, 0);
@@ -38,13 +38,13 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 }
 
 static Texture2D CreateBlockAtlas() {
-    Image image=GenImageColor(128,64,WHITE);
-    const Color bases[8]={
+    Image image=GenImageColor(160,64,WHITE);
+    const Color bases[9]={
         {92,176,88,255},{130,105,78,255},{115,125,140,255},{190,160,90,255},
         {65,135,190,255},{220,225,232,255},{65,120,65,255},{150,90,65,255}
     };
     for(int type=0;type<8;type++) {
-        int ox=(type%4)*32, oy=(type/4)*32;
+        int ox=(type%5)*32, oy=(type/5)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             float n=noise2(x+type*31,y+type*17,2026);
             float shade=0.78f+n*0.38f;
@@ -52,6 +52,7 @@ static Texture2D CreateBlockAtlas() {
             if(type==7 && (y%5==0 || ((x+(y/5%2)*4)%8==0))) shade*=0.58f;
             if(type==4 && ((x+y*3)%11<2)) shade=1.28f;
             if(type==6 && n<0.24f) shade*=0.68f;
+            if(type==8) shade=(0.72f+n*0.65f)*((x+y)%7==0?1.45f:1.0f);
             if(type==0 && y<4) shade*=1.13f;
             p.r=(unsigned char)Clamp(p.r*shade,0,255);
             p.g=(unsigned char)Clamp(p.g*shade,0,255);
@@ -79,8 +80,8 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color, int type) {
         Vector3 p[6]={a,b,c,a,c,d};
         int tile=32;
-        float u0=((type%4)*tile+0.5f)/128.0f, u1=((type%4)*tile+31.5f)/128.0f;
-        float v0=((type/4)*tile+0.5f)/64.0f, v1=((type/4)*tile+31.5f)/64.0f;
+        float u0=((type%5)*tile+0.5f)/160.0f, u1=((type%5)*tile+31.5f)/160.0f;
+        float v0=((type/5)*tile+0.5f)/64.0f, v1=((type/5)*tile+31.5f)/64.0f;
         const float uv[12]={u0,v0,u0,v1,u1,v1,u0,v0,u1,v1,u1,v0};
         for(int i=0;i<6;i++) {
             const auto& v=p[i];
@@ -124,7 +125,7 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
 
 static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int seed) {
     blocks.clear();
-    blocks.reserve(size * size * 7);
+    blocks.reserve(size * size * 8);
     for (int x = 0; x < size; ++x) {
         for (int z = 0; z < size; ++z) {
             float n = 0.0f;
@@ -148,8 +149,12 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
                 if (y == h-1) c = (type == 3 && h <= 2) ? palette[3] : palette[0];
                 if (type == 2 && y == h-1 && h > 13) c = palette[5];
                 if (type == 3 && h <= 2 && y == h-1) c = palette[3];
+                // Rare glowing-looking lava pockets below the surface.
+                if (y==1 && noise2(x+911,z+577,seed+91)>0.986f) c=palette[8];
                 blocks.push_back({{(float)x,(float)y,(float)z},c});
             }
+            // Water fills low coastal and valley tiles as a visible, non-flowing block.
+            if(h<=2 && type!=3) blocks.push_back({{(float)x,2.0f,(float)z},palette[4]});
         }
     }
 }
@@ -238,8 +243,8 @@ int main() {
         else if (s=="/seed") message=TextFormat("World seed: %d",seed);
         else if (s.rfind("/give ",0)==0) {
             int v=atoi(s.substr(6).c_str());
-            if (v>=1 && v<=8) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
-            else message="Usage: /give 1-8";
+            if (v>=1 && v<=9) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
+            else message="Usage: /give 1-9";
         } else message="Unknown command. Type /help.";
         command[0]='\0'; commandOpen=false; messageTime=4.0f;
     };
