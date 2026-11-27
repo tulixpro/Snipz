@@ -674,13 +674,17 @@ int main() {
             drawBackdrop();
             float cx=GetScreenWidth()/2.0f;
             if(screen==MAIN_MENU) {
-                DrawRectangleRounded({cx-205,112,410,390},.035f,12,Fade(Color{11,20,31,255},.78f));
-                DrawRectangleRoundedLines({cx-205,112,410,390},.035f,12,Fade(WHITE,.24f));
-                DrawText("WELCOME TO",(int)cx-83,137,16,Color{190,211,226,255});
-                DrawText("BLOCKLANDS",(int)cx-155,160,36,WHITE);
-                DrawText("Explore. Build. Create.",(int)cx-105,203,17,LIGHTGRAY);\n                DrawText("Your worlds can now be saved locally.",(int)cx-130,224,13,Color{177,198,215,255});
-                if(button({cx-150,244,300,52},"PLAY",true)) screen=WORLD_MENU;
-                if(button({cx-150,308,300,48},"CONTINUE")) {
+                const float panelX=cx-230, panelY=82;
+                DrawRectangleRounded({panelX,panelY,460,470},.045f,16,Fade(Color{7,15,25,255},.88f));
+                DrawRectangleRoundedLines({panelX,panelY,460,470},.045f,16,Fade(Color{92,176,220,255},.42f));
+                DrawRectangleRounded({panelX+22,panelY+22,5,92},.5f,8,Color{63,184,255,255});
+                DrawText("BLOCKLANDS",(int)panelX+48,(int)panelY+26,38,WHITE);
+                DrawText("A WORLD OF YOUR OWN",(int)panelX+50,(int)panelY+72,14,Color{117,198,235,255});
+                DrawLine((int)panelX+28,(int)panelY+126,(int)panelX+432,(int)panelY+126,Fade(WHITE,.16f));
+                DrawText("Explore. Build. Create.",(int)panelX+30,(int)panelY+145,19,LIGHTGRAY);
+                DrawText("Your worlds are saved on this PC.",(int)panelX+30,(int)panelY+174,14,Color{166,188,207,255});
+                if(button({cx-175,panelY+218,350,54},"CREATE NEW WORLD",true)) screen=WORLD_MENU;
+                if(button({cx-175,panelY+284,350,48},"CONTINUE WORLD")) {
                     if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
                         RebuildHeightMap(blocks,worldSize,groundHeights);
                         if(worldModelReady) UnloadModel(worldModel);
@@ -689,11 +693,11 @@ int main() {
                         resetCamera();
                         screen=PLAYING; commandOpen=false; inventoryOpen=false; DisableCursor();
                         message="Saved world loaded."; messageTime=3.0f;
-                    } else { message="No valid save found yet."; messageTime=3.0f; }
+                    } else { message="No saved world yet - create one first."; messageTime=3.0f; }
                 }
-                if(button({cx-150,368,300,48},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
-                if(button({cx-150,428,300,48},"QUIT")) break;
-                DrawText("WASD / CONTROLLER SUPPORTED",(int)cx-130,462,13,Fade(WHITE,.7f));
+                if(button({cx-175,panelY+344,168,44},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
+                if(button({cx+7,panelY+344,168,44},"QUIT")) break;
+                DrawText("WASD  /  MOUSE  /  CONTROLLER",(int)panelX+83,(int)panelY+423,13,Fade(WHITE,.66f));
             } else if(screen==PAUSED) {
                 DrawText("PAUSED",(int)cx-85,126,34,WHITE);
                 if(button({cx-155,215,310,56},"RESUME",true)) { screen=PLAYING; DisableCursor(); }
