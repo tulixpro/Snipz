@@ -352,6 +352,7 @@ int main() {
         message="World ready. Explore and build!";
         messageTime=4.0f;
     };
+    auto saveCurrentWorld = [&]() { return !blocks.empty() && SaveWorldFile(blocks,worldSize,worldType,seed,creative); };
     auto runCommand = [&]() {
         std::string s(command);
         if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-11 /seed /save /load";
@@ -701,9 +702,9 @@ int main() {
             } else if(screen==PAUSED) {
                 DrawText("PAUSED",(int)cx-85,126,34,WHITE);
                 if(button({cx-155,215,310,56},"RESUME",true)) { screen=PLAYING; DisableCursor(); }
-                if(button({cx-155,283,310,52},"NEW WORLD")) screen=WORLD_MENU;
+                if(button({cx-155,283,310,52},"NEW WORLD")) { saveCurrentWorld(); screen=WORLD_MENU; }
                 if(button({cx-155,347,310,52},"SETTINGS")) { settingsReturn=PAUSED; screen=SETTINGS; }
-                if(button({cx-155,411,310,52},"MAIN MENU")) { screen=MAIN_MENU; EnableCursor(); }
+                if(button({cx-155,411,310,52},"MAIN MENU")) { saveCurrentWorld(); screen=MAIN_MENU; EnableCursor(); }
             } else if(screen==WORLD_MENU) {
                 DrawText("PLAY  /  WORLD SELECT",(int)cx-205,100,30,WHITE);
                 DrawText("Build a custom world or let Blocklands surprise you.",(int)cx-225,137,16,LIGHTGRAY);
@@ -740,6 +741,7 @@ int main() {
         }
         EndDrawing();
     }
+    saveCurrentWorld();
     { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\nheight="<<GetScreenHeight()<<"\nfps="<<menuFPS<<"\nfullscreen="<<fullscreen<<"\ngraphics="<<graphicsQuality<<"\nfov="<<fov<<"\nmouse_sens="<<mouseSensitivity<<"\ncontroller_sens="<<controllerSensitivity<<"\n"; }
     if(worldModelReady) UnloadModel(worldModel);
     EnableCursor();
