@@ -38,22 +38,49 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 }
 
 static Texture2D CreateBlockAtlas() {
+    // Clean, original voxel pixel-art tiles: broad color patches, not noisy per-pixel grain.
     Image image=GenImageColor(160,64,WHITE);
     const Color bases[9]={
-        {92,176,88,255},{130,105,78,255},{115,125,140,255},{190,160,90,255},
-        {65,135,190,255},{220,225,232,255},{65,120,65,255},{150,90,65,255},{235,82,24,255}
+        {95,166,65,255},{134,96,62,255},{126,130,136,255},{194,174,104,255},
+        {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255}
     };
     for(int type=0;type<9;type++) {
         int ox=(type%5)*32, oy=(type/5)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
-            float n=noise2(x+type*31,y+type*17,2026);
-            float shade=0.78f+n*0.38f;
+            int gx=x/4, gy=y/4;
+            float n=noise2(gx+type*37,gy+type*19,4242);
+            float shade=0.94f+n*0.12f;
             Color p=bases[type];
-            if(type==7 && (y%5==0 || ((x+(y/5%2)*4)%8==0))) shade*=0.58f;
-            if(type==4 && ((x+y*3)%11<2)) shade=1.28f;
-            if(type==6 && n<0.24f) shade*=0.68f;
-            if(type==8) shade=(0.72f+n*0.65f)*((x+y)%7==0?1.45f:1.0f);
-            if(type==0 && y<4) shade*=1.13f;
+            if(type==0) {
+                // Grass: calm green surface with a few darker pixel clusters.
+                if(n<0.20f) shade=0.78f;
+                if(n>0.88f) shade=1.12f;
+            } else if(type==1) {
+                if(n<0.24f) shade=0.76f;
+                if(n>0.86f) shade=1.13f;
+            } else if(type==2) {
+                if(n<0.22f) shade=0.78f;
+                if(n>0.90f) shade=1.12f;
+            } else if(type==3) {
+                if(n<0.18f) shade=0.82f;
+                if(n>0.87f) shade=1.10f;
+            } else if(type==4) {
+                shade=0.88f+n*0.16f;
+                if((gy%3==0) && (gx%4==1 || gx%4==2)) shade=1.13f;
+            } else if(type==5) {
+                if(n<0.22f) shade=0.88f;
+            } else if(type==6) {
+                shade=0.72f+n*0.34f;
+                if(n<0.30f) shade=0.55f;
+            } else if(type==7) {
+                // Simple staggered brick courses with clear mortar lines.
+                int row=y/8, localY=y%8, shift=(row%2)*8;
+                if(localY==0 || ((x+shift)%16==0)) shade=0.48f;
+                else if(n>0.82f) shade=1.08f;
+            } else if(type==8) {
+                shade=0.82f+n*0.30f;
+                if(((gx+gy*2)%5)==0) shade=1.28f;
+            }
             p.r=(unsigned char)Clamp(p.r*shade,0,255);
             p.g=(unsigned char)Clamp(p.g*shade,0,255);
             p.b=(unsigned char)Clamp(p.b*shade,0,255);
