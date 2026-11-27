@@ -123,13 +123,15 @@ int main() {
             if(sscanf(line.c_str(),"width=%d",&value)==1) W=std::max(800,std::min(2560,value));
             else if(sscanf(line.c_str(),"height=%d",&value)==1) H=std::max(600,std::min(1600,value));
             else if(sscanf(line.c_str(),"fps=%d",&value)==1) fpsLimit=value;
-            else if(sscanf(line.c_str(),"fullscreen=%d",&value)==1) fullscreen=value;\n            else if(sscanf(line.c_str(),"graphics=%d",&value)==1) graphicsQuality=Clamp(value,0,2);
+            else if(sscanf(line.c_str(),"fullscreen=%d",&value)==1) fullscreen=value;
+            else if(sscanf(line.c_str(),"graphics=%d",&value)==1) graphicsQuality=Clamp(value,0,2);
         }
     }
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | (fullscreen?FLAG_FULLSCREEN_MODE:0));
     InitWindow(W,H,"BLOCKLANDS");
     if (!IsWindowReady()) return 1;
-    SetTargetFPS(fpsLimit<=0?0:fpsLimit);\n    if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }\n    else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
+    SetTargetFPS(fpsLimit<=0?0:fpsLimit);
+    if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }\n    else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
 
     enum Screen { MAIN_MENU, PLAYING, PAUSED, WORLD_MENU, SETTINGS };
     Screen screen = MAIN_MENU;
@@ -235,7 +237,8 @@ int main() {
                 int gx=Clamp((int)std::lround(camera.position.x),0,worldSize-1);
                 int gz=Clamp((int)std::lround(camera.position.z),0,worldSize-1);
                 float floorY=(groundHeights.empty()?1.65f:(float)groundHeights[gx*worldSize+gz]+1.65f);
-                if(camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }\n                if(camera.position.y<1.65f) { camera.position.y=1.65f; velocity.y=0; onGround=true; }
+                if(camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
+                if(camera.position.y<1.65f) { camera.position.y=1.65f; velocity.y=0; onGround=true; }
                 camera.target=Vector3Add(camera.position,look);
 
                 if(IsKeyPressed(KEY_ONE)) selected=0;
@@ -347,7 +350,9 @@ int main() {
                 if(button({cx-155,536,310,48},"BACK")) screen=(blocks.empty()?MAIN_MENU:PAUSED);
             } else if(screen==SETTINGS) {
                 DrawText("SETTINGS",(int)cx-100,130,32,WHITE);
-                DrawText(TextFormat("GRAPHICS: %s",graphicsQuality==0?"LOW":(graphicsQuality==1?"NORMAL":"HIGH")),(int)cx-125,205,22,SKYBLUE);\n                if(button({cx-155,245,310,48},"CHANGE GRAPHICS")) { graphicsQuality=(graphicsQuality+1)%3; int nw=graphicsQuality==0?960:(graphicsQuality==1?1280:1600); int nh=graphicsQuality==0?540:(graphicsQuality==1?720:900); SetWindowSize(nw,nh); }\n                DrawText(TextFormat("FPS LIMIT: %s",menuFPS<=0?"UNLIMITED":TextFormat("%d",menuFPS)),(int)cx-125,320,22,SKYBLUE);
+                DrawText(TextFormat("GRAPHICS: %s",graphicsQuality==0?"LOW":(graphicsQuality==1?"NORMAL":"HIGH")),(int)cx-125,205,22,SKYBLUE);
+                if(button({cx-155,245,310,48},"CHANGE GRAPHICS")) { graphicsQuality=(graphicsQuality+1)%3; int nw=graphicsQuality==0?960:(graphicsQuality==1?1280:1600); int nh=graphicsQuality==0?540:(graphicsQuality==1?720:900); SetWindowSize(nw,nh); }
+                DrawText(TextFormat("FPS LIMIT: %s",menuFPS<=0?"UNLIMITED":TextFormat("%d",menuFPS)),(int)cx-125,320,22,SKYBLUE);
                 if(button({cx-155,365,310,48},"CHANGE FPS LIMIT")) {
                     if(menuFPS==60) menuFPS=120; else if(menuFPS==120) menuFPS=144; else if(menuFPS==144) menuFPS=0; else menuFPS=60;
                     SetTargetFPS(menuFPS<=0?0:menuFPS);
@@ -358,6 +363,8 @@ int main() {
         }
         EndDrawing();
     }
+    { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\\nheight="<<GetScreenHeight()<<"\\nfps="<<menuFPS<<"\\nfullscreen="<<fullscreen<<"\\ngraphics="<<graphicsQuality<<"\\n"; }
+    if(worldModelReady) UnloadModel(worldModel);
     EnableCursor();
     CloseWindow();
     return 0;
