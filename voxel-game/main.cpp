@@ -20,6 +20,16 @@ static float noise2(int x, int z, int seed) {
     return (n & 0xffff) / 65535.0f;
 }
 
+static float smoothNoise2(float x, float z, int seed) {
+    auto smooth=[](float t){ return t*t*(3.0f-2.0f*t); };
+    int x0=(int)std::floor(x), z0=(int)std::floor(z);
+    float tx=smooth(x-x0), tz=smooth(z-z0);
+    float a=noise2(x0,z0,seed), b=noise2(x0+1,z0,seed);
+    float d=noise2(x0,z0+1,seed), e=noise2(x0+1,z0+1,seed);
+    float top=a+(b-a)*tx, bottom=d+(e-d)*tx;
+    return top+(bottom-top)*tz;
+}
+
 static const Color palette[] = {
     {92,176,88,255}, {130,105,78,255}, {115,125,140,255},
     {190,160,90,255}, {80,145,180,255}, {190,190,195,255},
@@ -166,11 +176,10 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
     blocks.reserve(size * size * 8);
     for (int x = 0; x < size; ++x) {
         for (int z = 0; z < size; ++z) {
-            float n = 0.0f;
-            for (int ox=-1; ox<=1; ++ox)
-                for (int oz=-1; oz<=1; ++oz)
-                    n += noise2(x+ox, z+oz, seed);
-            n /= 9.0f;
+            // Multi-scale interpolated terrain noise avoids the harsh, speckled look.
+            float n = smoothNoise2(x*0.035f,z*0.035f,seed)*0.58f
+                    + smoothNoise2(x*0.075f,z*0.075f,seed+31)*0.27f
+                    + smoothNoise2(x*0.16f,z*0.16f,seed+79)*0.15f;
             int h = 4;
             if (type == 0) h = 3 + (int)(n * 7);
             if (type == 1) h = 3;
@@ -247,7 +256,7 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=128, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=256, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
@@ -527,6 +536,18 @@ int main() {
             ClearBackground(sky);
             BeginMode3D(camera);
             DrawSphere(night?Vector3{worldSize*.78f,24,worldSize*.18f}:Vector3{worldSize*.18f,27,worldSize*.22f},2.4f,night?Color{220,226,245,255}:Color{255,224,142,255});
+            // Soft, blocky cloud bands give the sky depth without expensive effects.
+            if(!night) {
+                for(int cloud=0;cloud<5;cloud++) {
+                    float cx=worldSize*(0.12f+cloud*0.19f);
+                    float cz=worldSize*(0.22f+(cloud%2)*0.42f);
+                    float cy=31.0f+(cloud%3)*2.0f;
+                    Color cloudColor=Color{244,249,255,235};
+                    DrawCube({cx,cy,cz},9.0f,1.3f,4.0f,cloudColor);
+                    DrawCube({cx+3.2f,cy+0.35f,cz},5.0f,1.0f,3.2f,cloudColor);
+                    DrawCube({cx-3.0f,cy+0.15f,cz+0.4f},4.5f,0.9f,3.0f,cloudColor);
+                }
+            }
             
             if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
             EndMode3D();
@@ -598,7 +619,7 @@ int main() {
                 if(button({cx+156,212,64,48},">")) worldType=(worldType+1)%4;
                 DrawText(TextFormat("WORLD SIZE:  %d x %d",worldSize,worldSize),(int)cx-130,285,20,WHITE);
                 if(button({cx-220,322,64,48},"-")) worldSize=std::max(32,worldSize-16);
-                if(button({cx+156,322,64,48},"+")) worldSize=std::min(192,worldSize+16);
+                if(button({cx+156,322,64,48},"+")) worldSize=std::min(256,worldSize+16);
                 DrawText(TextFormat("SEED: %d",seed),(int)cx-75,397,18,LIGHTGRAY);
                 if(button({cx+85,384,135,44},"RANDOM")) seed=GetRandomValue(1,999999);
                 if(button({cx-155,466,310,58},"GENERATE WORLD",true)) startWorld();
