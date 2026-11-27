@@ -141,7 +141,7 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=64, worldType=0, seed=2026, selected=0;
+    int worldSize=64, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
@@ -242,15 +242,22 @@ int main() {
         if (messageTime>0) messageTime-=dt;
 
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
-            if(IsKeyPressed(KEY_E) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; EnableCursor(); }
+            if(IsKeyPressed(KEY_E) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
         }
         if (screen==PLAYING && inventoryOpen) {
             if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
+            if(IsGamepadAvailable(0)) {
+                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_LEFT)) inventoryCursor=std::max(0,inventoryCursor-1);
+                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+1);
+                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_UP)) inventoryCursor=std::max(0,inventoryCursor-3);
+                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_DOWN)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+3);
+                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) selected=inventoryCursor;
+            }
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 float panelX=GetScreenWidth()/2.0f-270.0f, panelY=GetScreenHeight()/2.0f-190.0f;
                 for(int i=0;i<27;i++) {
                     Rectangle slot={panelX+28+(i%9)*56.0f,panelY+72+(i/9)*56.0f,48,48};
-                    if(CheckCollisionPointRec(GetMousePosition(),slot) && i<paletteCount) { selected=i; }
+                    if(CheckCollisionPointRec(GetMousePosition(),slot) && i<paletteCount) { selected=i; inventoryCursor=i; }
                 }
             }
         }
