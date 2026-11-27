@@ -23,29 +23,34 @@ static float noise2(int x, int z, int seed) {
 static const Color palette[] = {
     {92,176,88,255}, {130,105,78,255}, {115,125,140,255},
     {190,160,90,255}, {80,145,180,255}, {190,190,195,255},
-    {65,120,65,255}, {150,90,65,255}, {235,82,24,255}
+    {65,120,65,255}, {150,90,65,255}, {235,82,24,255},
+    {112,76,45,255}, {232,91,137,255}
 };
-static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick","Lava"};
+static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick","Lava","Wood","Flower"};
 static const char* worldNames[] = {"Green Valley","Flatlands","Highlands","Island"};
-static const int paletteCount = 9;
+static const int paletteCount = 11;
 
 static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::vector<int>& heights) {
     heights.assign(size * size, 0);
     for (const auto& b : blocks) {
+        bool decoration=(b.c.r==palette[6].r && b.c.g==palette[6].g && b.c.b==palette[6].b) ||
+                        (b.c.r==palette[9].r && b.c.g==palette[9].g && b.c.b==palette[9].b) ||
+                        (b.c.r==palette[10].r && b.c.g==palette[10].g && b.c.b==palette[10].b);
         int x=(int)std::lround(b.p.x), z=(int)std::lround(b.p.z), y=(int)std::lround(b.p.y);
-        if (x>=0 && x<size && z>=0 && z<size && y>=0) heights[x*size+z]=std::max(heights[x*size+z],y+1);
+        if (!decoration && x>=0 && x<size && z>=0 && z<size && y>=0) heights[x*size+z]=std::max(heights[x*size+z],y+1);
     }
 }
 
 static Texture2D CreateBlockAtlas() {
     // Clean, original voxel pixel-art tiles: broad color patches, not noisy per-pixel grain.
-    Image image=GenImageColor(160,64,WHITE);
+    Image image=GenImageColor(192,64,WHITE);
     const Color bases[9]={
         {95,166,65,255},{134,96,62,255},{126,130,136,255},{194,174,104,255},
-        {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255}
+        {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255},
+        {112,76,45,255},{232,91,137,255}
     };
-    for(int type=0;type<9;type++) {
-        int ox=(type%5)*32, oy=(type/5)*32;
+    for(int type=0;type<11;type++) {
+        int ox=(type%6)*32, oy=(type/6)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             int gx=x/4, gy=y/4;
             float n=noise2(gx+type*37,gy+type*19,4242);
@@ -80,6 +85,12 @@ static Texture2D CreateBlockAtlas() {
             } else if(type==8) {
                 shade=0.82f+n*0.30f;
                 if(((gx+gy*2)%5)==0) shade=1.28f;
+            } else if(type==9) {
+                shade=0.82f+n*0.28f;
+                if(gx%4==0) shade*=0.78f;
+            } else if(type==10) {
+                shade=0.82f+n*0.22f;
+                if((gx+gy)%4==0) { p.r=255; p.g=220; p.b=90; }
             }
             p.r=(unsigned char)Clamp(p.r*shade,0,255);
             p.g=(unsigned char)Clamp(p.g*shade,0,255);
@@ -107,8 +118,8 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color, int type) {
         Vector3 p[6]={a,b,c,a,c,d};
         int tile=32;
-        float u0=((type%5)*tile+0.5f)/160.0f, u1=((type%5)*tile+31.5f)/160.0f;
-        float v0=((type/5)*tile+0.5f)/64.0f, v1=((type/5)*tile+31.5f)/64.0f;
+        float u0=((type%6)*tile+0.5f)/192.0f, u1=((type%6)*tile+31.5f)/192.0f;
+        float v0=((type/6)*tile+0.5f)/64.0f, v1=((type/6)*tile+31.5f)/64.0f;
         const float uv[12]={u0,v0,u0,v1,u1,v1,u0,v0,u1,v1,u1,v0};
         for(int i=0;i<6;i++) {
             const auto& v=p[i];
@@ -183,6 +194,24 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
             }
             // Water fills low coastal and valley tiles as a visible, non-flowing block.
             if(h<=4) blocks.push_back({{(float)x,(float)h,(float)z},palette[4]});
+            if(type!=3 && h>=4 && noise2(x+733,z+191,seed+57)>0.994f)
+                blocks.push_back({{(float)x,(float)h,(float)z},palette[10]});
+            if(type!=3 && h>=5 && x>=4 && x<size-4 && z>=4 && z<size-4 &&
+               noise2(x+319,z+827,seed+123)>0.9915f) {
+                int trunkHeight=3+(int)(noise2(x+17,z+29,seed+5)*2.0f);
+                for(int ty=0;ty<trunkHeight;ty++)
+                    blocks.push_back({{(float)x,(float)(h+ty),(float)z},palette[9]});
+                int crownY=h+trunkHeight-1;
+                for(int dy=-1;dy<=2;dy++) {
+                    int radius=(dy==2)?1:2;
+                    for(int dx=-radius;dx<=radius;dx++) for(int dz=-radius;dz<=radius;dz++) {
+                        if(dx==0 && dz==0 && dy<1) continue;
+                        if(std::abs(dx)+std::abs(dz)>radius+1) continue;
+                        if(noise2(x+dx*13+dy*7,z+dz*17-dy*5,seed+211)<0.10f) continue;
+                        blocks.push_back({{(float)(x+dx),(float)(crownY+dy),(float)(z+dz)},palette[6]});
+                    }
+                }
+            }
         }
     }
 }
@@ -263,7 +292,7 @@ int main() {
     };
     auto runCommand = [&]() {
         std::string s(command);
-        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-8 /seed";
+        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-11 /seed";
         else if (s=="/day") { night=false; message="Daytime enabled."; }
         else if (s=="/night") { night=true; message="Nighttime enabled."; }
         else if (s=="/creative") { creative=true; message="Creative mode enabled."; }
@@ -271,7 +300,7 @@ int main() {
         else if (s=="/seed") message=TextFormat("World seed: %d",seed);
         else if (s.rfind("/give ",0)==0) {
             int v=atoi(s.substr(6).c_str());
-            if (v>=1 && v<=9) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
+            if (v>=1 && v<=paletteCount) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
             else message="Usage: /give 1-9";
         } else message="Unknown command. Type /help.";
         command[0]='\0'; commandOpen=false; messageTime=4.0f;
@@ -447,6 +476,7 @@ int main() {
                 if(IsKeyPressed(KEY_SEVEN)) selected=6;
                 if(IsKeyPressed(KEY_EIGHT)) selected=7;
                 if(IsKeyPressed(KEY_NINE)) selected=8;
+                if(IsKeyPressed(KEY_ZERO)) selected=9;
 
                 bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_2));
             bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_2));
