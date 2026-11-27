@@ -355,6 +355,8 @@ int main() {
                 }
                 camera.position=Vector3Add(camera.position,move);
                 if((IsKeyPressed(KEY_SPACE) || ((activeGamepad>=0) && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
+                bool wasOnGround=onGround;
+                onGround=false;
                 velocity.y-=18.0f*dt;
                 camera.position.y+=velocity.y*dt;
                 int gx=(int)std::lround(camera.position.x);
@@ -362,7 +364,6 @@ int main() {
                 bool insideWorld=gx>=0 && gx<worldSize && gz>=0 && gz<worldSize;
                 int safeHeight=(insideWorld && !groundHeights.empty() && groundHeights[gx*worldSize+gz]>0)?groundHeights[gx*worldSize+gz]:-1000;
                 float floorY=(float)safeHeight+1.65f;
-                bool wasOnGround=onGround;
                 if(insideWorld && camera.position.y<floorY) {
                     if(!creative && !wasOnGround && velocity.y < -11.0f) {
                         int impact=(int)std::floor((-velocity.y-10.0f)*0.75f);
