@@ -41,3 +41,5 @@ jobs:
         with:
           name: Blocklands-Windows-x64
           path: dist/
+
+# Rebuild trigger: standalone OpenGL 2.1 package
