@@ -42,4 +42,4 @@ jobs:
           name: Blocklands-Windows-x64
           path: dist/
 
-# Rebuild trigger: autosave and cleaner main menu
+# Rebuild trigger: survival stacks and crafting table
