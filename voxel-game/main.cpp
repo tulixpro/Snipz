@@ -194,7 +194,7 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
             }
             // Water fills low coastal and valley tiles as a visible, non-flowing block.
             if(h<=4) blocks.push_back({{(float)x,(float)h,(float)z},palette[4]});
-            if(type!=3 && h>=4 && noise2(x+733,z+191,seed+57)>0.994f)
+            if(type!=3 && h>=5 && noise2(x+733,z+191,seed+57)>0.994f)
                 blocks.push_back({{(float)x,(float)h,(float)z},palette[10]});
             if(type!=3 && h>=5 && x>=4 && x<size-4 && z>=4 && z<size-4 &&
                noise2(x+319,z+827,seed+123)>0.9915f) {
