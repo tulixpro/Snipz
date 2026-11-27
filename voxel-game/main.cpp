@@ -11,7 +11,7 @@
 #include <cmath>
 
 struct Block { Vector3 p; Color c; };
-static Texture2D gBlockAtlas={0};
+
 
 static float noise2(int x, int z, int seed) {
     unsigned int n = (unsigned int)(x * 374761393u + z * 668265263u + seed * 1442695041u);
@@ -117,7 +117,7 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     std::memcpy(mesh.texcoords,texcoords.data(),texcoords.size()*sizeof(float));
     UploadMesh(&mesh,false);
     Model model=LoadModelFromMesh(mesh);
-    if(model.materialCount>0 && gBlockAtlas.id>0) model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture=gBlockAtlas;
+    if(model.materialCount>0) model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture=CreateBlockAtlas();
     return model;
 }
 
@@ -174,7 +174,6 @@ int main() {
     InitWindow(W,H,"BLOCKLANDS");
     if (!IsWindowReady()) return 1;
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
-    gBlockAtlas=CreateBlockAtlas();
     if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }
     else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
 
@@ -348,7 +347,7 @@ int main() {
                 int gx=(int)std::lround(camera.position.x);
                 int gz=(int)std::lround(camera.position.z);
                 bool insideWorld=gx>=0 && gx<worldSize && gz>=0 && gz<worldSize;
-                int safeHeight=(insideWorld && !groundHeights.empty())?groundHeights[gx*worldSize+gz]:-1000;
+                int safeHeight=(insideWorld && !groundHeights.empty() && groundHeights[gx*worldSize+gz]>0)?groundHeights[gx*worldSize+gz]:-1000;
                 float floorY=(float)safeHeight+1.65f;
                 if(insideWorld && camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
                 if(camera.position.y<-24.0f) {
@@ -499,7 +498,6 @@ int main() {
     }
     { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\nheight="<<GetScreenHeight()<<"\nfps="<<menuFPS<<"\nfullscreen="<<fullscreen<<"\ngraphics="<<graphicsQuality<<"\nfov="<<fov<<"\nmouse_sens="<<mouseSensitivity<<"\ncontroller_sens="<<controllerSensitivity<<"\n"; }
     if(worldModelReady) UnloadModel(worldModel);
-    if(gBlockAtlas.id>0) UnloadTexture(gBlockAtlas);
     EnableCursor();
     CloseWindow();
     return 0;
