@@ -269,7 +269,7 @@ int main() {
             }
         }
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
-            if (IsKeyPressed(KEY_ESCAPE)) { screen=PAUSED; EnableCursor(); }
+            if (IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_MIDDLE_RIGHT))) { screen=PAUSED; EnableCursor(); }
             if (IsKeyPressed(KEY_F2)) { screen=WORLD_MENU; EnableCursor(); }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
             if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | LMB mine | RMB build"; messageTime=5; }
