@@ -133,12 +133,15 @@ int main() {
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
     if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }
     else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
+    else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
 
     enum Screen { MAIN_MENU, PLAYING, PAUSED, WORLD_MENU, SETTINGS };
     Screen screen = MAIN_MENU;
     Screen settingsReturn = MAIN_MENU;
     std::vector<Block> blocks;
     std::vector<int> groundHeights;
+    Model worldModel={};
+    bool worldModelReady=false;
     int worldSize=64, worldType=0, seed=2026, selected=0;
     bool creative=true, night=false, commandOpen=false;
     char command[128]={0};
