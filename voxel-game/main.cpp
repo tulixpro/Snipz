@@ -41,9 +41,9 @@ static Texture2D CreateBlockAtlas() {
     Image image=GenImageColor(160,64,WHITE);
     const Color bases[9]={
         {92,176,88,255},{130,105,78,255},{115,125,140,255},{190,160,90,255},
-        {65,135,190,255},{220,225,232,255},{65,120,65,255},{150,90,65,255}
+        {65,135,190,255},{220,225,232,255},{65,120,65,255},{150,90,65,255},{235,82,24,255}
     };
-    for(int type=0;type<8;type++) {
+    for(int type=0;type<9;type++) {
         int ox=(type%5)*32, oy=(type/5)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             float n=noise2(x+type*31,y+type*17,2026);
@@ -151,10 +151,11 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
                 if (type == 3 && h <= 2 && y == h-1) c = palette[3];
                 // Rare glowing-looking lava pockets below the surface.
                 if (y==1 && noise2(x+911,z+577,seed+91)>0.986f) c=palette[8];
+                if (y==h-1 && noise2(x+177,z+391,seed+173)>0.997f) c=palette[8];
                 blocks.push_back({{(float)x,(float)y,(float)z},c});
             }
             // Water fills low coastal and valley tiles as a visible, non-flowing block.
-            if(h<=4 && type!=3) blocks.push_back({{(float)x,(float)h,(float)z},palette[4]});
+            if(h<=4) blocks.push_back({{(float)x,(float)h,(float)z},palette[4]});
         }
     }
 }
@@ -407,8 +408,8 @@ int main() {
                 camera.target=Vector3Add(camera.position,look);
 
                 if((activeGamepad>=0)) {
-                    if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_1)) selected=(selected+7)%8;
-                    if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) selected=(selected+1)%8;
+                    if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_1)) selected=(selected+paletteCount-1)%paletteCount;
+                    if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) selected=(selected+1)%paletteCount;
                 }
                 if(IsKeyPressed(KEY_ONE)) selected=0;
                 if(IsKeyPressed(KEY_TWO)) selected=1;
@@ -418,6 +419,7 @@ int main() {
                 if(IsKeyPressed(KEY_SIX)) selected=5;
                 if(IsKeyPressed(KEY_SEVEN)) selected=6;
                 if(IsKeyPressed(KEY_EIGHT)) selected=7;
+                if(IsKeyPressed(KEY_NINE)) selected=8;
 
                 bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_2));
             bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_2));
