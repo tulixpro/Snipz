@@ -39,6 +39,9 @@ Siehe [cloudflare/README.md](cloudflare/README.md) für den aktuellen Cloudflare
 
 ## Sicherheit
 
+Die aktuelle Sicherheits-Baseline und die noch offenen Anforderungen stehen in [SECURITY.md](./SECURITY.md). Der Worker ist absichtlich auf den Health-Check beschränkt, bis Authentifizierung und serverseitige Berechtigungen implementiert und getestet sind.
+
+
 - Keine Datenbankpasswörter, Service-Role-Schlüssel oder privaten Tokens im Browser oder Repository.
 - Admin-Rechte niemals aus Browser-Eingaben übernehmen.
 - Uploads nur über serverseitig autorisierte, kurzlebige Freigaben.
