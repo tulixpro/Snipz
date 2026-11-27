@@ -38,14 +38,14 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 }
 
 static Texture2D CreateBlockAtlas() {
-    Image image=GenImageColor(64,32,WHITE);
+    Image image=GenImageColor(128,64,WHITE);
     const Color bases[8]={
         {92,176,88,255},{130,105,78,255},{115,125,140,255},{190,160,90,255},
         {65,135,190,255},{220,225,232,255},{65,120,65,255},{150,90,65,255}
     };
     for(int type=0;type<8;type++) {
-        int ox=(type%4)*16, oy=(type/4)*16;
-        for(int y=0;y<16;y++) for(int x=0;x<16;x++) {
+        int ox=(type%4)*32, oy=(type/4)*32;
+        for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             float n=noise2(x+type*31,y+type*17,2026);
             float shade=0.78f+n*0.38f;
             Color p=bases[type];
@@ -78,8 +78,9 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     std::vector<unsigned char> colors;
     auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color, int type) {
         Vector3 p[6]={a,b,c,a,c,d};
-        float u0=((type%4)*16+0.5f)/64.0f, u1=((type%4)*16+15.5f)/64.0f;
-        float v0=((type/4)*16+0.5f)/32.0f, v1=((type/4)*16+15.5f)/32.0f;
+        int tile=32;
+        float u0=((type%4)*tile+0.5f)/128.0f, u1=((type%4)*tile+31.5f)/128.0f;
+        float v0=((type/4)*tile+0.5f)/64.0f, v1=((type/4)*tile+31.5f)/64.0f;
         const float uv[12]={u0,v0,u0,v1,u1,v1,u0,v0,u1,v1,u1,v0};
         for(int i=0;i<6;i++) {
             const auto& v=p[i];
@@ -184,7 +185,7 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=64, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=128, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
@@ -521,7 +522,7 @@ int main() {
                 if(button({cx+156,212,64,48},">")) worldType=(worldType+1)%4;
                 DrawText(TextFormat("WORLD SIZE:  %d x %d",worldSize,worldSize),(int)cx-130,285,20,WHITE);
                 if(button({cx-220,322,64,48},"-")) worldSize=std::max(32,worldSize-16);
-                if(button({cx+156,322,64,48},"+")) worldSize=std::min(96,worldSize+16);
+                if(button({cx+156,322,64,48},"+")) worldSize=std::min(192,worldSize+16);
                 DrawText(TextFormat("SEED: %d",seed),(int)cx-75,397,18,LIGHTGRAY);
                 if(button({cx+85,384,135,44},"RANDOM")) seed=GetRandomValue(1,999999);
                 if(button({cx-155,466,310,58},"GENERATE WORLD",true)) startWorld();
