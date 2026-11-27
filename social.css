@@ -56,3 +56,37 @@
 @media(prefers-reduced-motion:reduce){
   .social-tab,.social-action,.filter-chip,.story{transition:none!important;scroll-behavior:auto!important}
 }
+
+/* Snipz story viewer — local demo stories */
+.story-row{gap:15px;padding:8px 2px 15px}
+.story{min-width:76px;transition:transform .18s ease}
+.story:hover{transform:translateY(-3px)}
+.story-ring{width:68px;height:68px;padding:3px;background:conic-gradient(from 25deg,#4db4ff,#846bff,#ec72b8,#4db4ff);box-shadow:0 0 18px #398dff22}
+.story-ring span{background:linear-gradient(145deg,#172e4b,#0d1b2e);border:2px solid #0e192a}
+.story-ring.your-story{background:#263c59;border:1px dashed #73baff;box-shadow:none}
+.story-ring.your-story span{background:#152a44;color:#83c8ff;font-size:25px}
+.snipz-story-viewer{position:fixed;inset:0;z-index:80;background:#030813f5;display:flex;flex-direction:column;padding:18px max(16px,calc((100vw - 560px)/2));}
+.snipz-story-viewer[hidden]{display:none}
+.story-viewer-top{display:flex;align-items:center;gap:14px}
+.story-progress{height:4px;flex:1;background:#ffffff35;border-radius:8px;overflow:hidden}
+.story-progress span{display:block;height:100%;width:0;background:#fff;transition:width .2s ease}
+.story-viewer-top button{background:#ffffff18;border-radius:50%;width:38px;height:38px;font-size:25px}
+.story-viewer-person{display:flex;align-items:center;gap:10px;padding:18px 0}
+.story-viewer-person .social-avatar{width:38px;height:38px;flex-basis:38px}
+.story-viewer-person span b,.story-viewer-person span small{display:block}
+.story-viewer-person span small{color:#a7bad4;font-size:11px}
+.story-viewer-copy{flex:1;display:grid;place-items:center;min-height:0}
+.story-scene{width:min(100%,520px);height:min(68vh,720px);border-radius:24px;padding:28px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:0 20px 70px #0008;overflow:hidden;position:relative}
+.story-scene:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#050914d9,transparent 70%)}
+.story-scene span,.story-scene p{position:relative;z-index:1}
+.story-scene span{font-size:clamp(25px,5vw,42px);font-weight:900;line-height:1.05;max-width:390px}
+.story-scene p{color:#f0f5ff;font-size:14px;margin:12px 0 4px}
+.story-cafe{background:radial-gradient(circle at 70% 22%,#ffd6a2,transparent 22%),linear-gradient(140deg,#8b6048,#d59a70 45%,#344b5c)}
+.story-sunset{background:radial-gradient(circle at 50% 34%,#ffcf91,transparent 18%),linear-gradient(165deg,#3b477e,#e77d7a 55%,#26364d)}
+.story-art{background:radial-gradient(ellipse at 30% 28%,#ff83b7,transparent 28%),radial-gradient(ellipse at 75% 48%,#67caff,transparent 32%),linear-gradient(135deg,#3b327b,#131c3c)}
+.story-music{background:radial-gradient(circle at 50% 40%,#bb92ff,transparent 25%),linear-gradient(145deg,#102d50,#101126 65%,#4a2e68)}
+.story-viewer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:16px;color:#90b9e8;font-size:10px;letter-spacing:2px}
+.story-viewer-bottom button{width:44px;height:44px;border-radius:50%;background:#172d49;border:1px solid #4d86c4;font-size:27px}
+.story-viewer-bottom button:disabled{opacity:.3}
+body.story-open{overflow:hidden}
+@media(max-width:600px){.snipz-story-viewer{padding:12px 12px calc(14px + env(safe-area-inset-bottom))}.story-scene{height:72vh;border-radius:18px}.story-viewer-person{padding:13px 0}}
