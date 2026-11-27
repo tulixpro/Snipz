@@ -14,8 +14,15 @@ jobs:
         run: cmake -S voxel-game -B voxel-game/build -A x64
       - name: Build
         run: cmake --build voxel-game/build --config Release
-      - name: Upload Windows game
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item voxel-game/build/Release/Blocklands.exe dist/
+          Copy-Item voxel-game/build/Release/BlocklandsLauncher.exe dist/
+          @("BLOCKLANDS","Start BlocklandsLauncher.exe.","Keep both EXE files in the same folder.") | Set-Content dist/README.txt
+      - name: Upload Windows game and launcher
         uses: actions/upload-artifact@v4
         with:
           name: Blocklands-Windows-x64
-          path: voxel-game/build/Release/Blocklands.exe
+          path: dist/
