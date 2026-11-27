@@ -43,6 +43,7 @@
     const b=document.createElement('button');b.type='button';b.textContent='💬';b.setAttribute('aria-label','Freunde und Chats');b.dataset.openSocial='chats';mobile.insertBefore(b,mobile.lastElementChild);
   }
   function showSocial(tab){
+    if(activeTab==='camera'&&tab!=='camera'&&cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
     activeTab=tab;view.classList.add('active');view.style.display='block';
     const feed=$('feed'),head=$('feedhead');
     if(feed)feed.style.display='none';if(head)head.style.display='none';
