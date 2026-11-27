@@ -229,7 +229,7 @@ int main() {
                 DrawRectangle(x+7,hotY+7,44,28,palette[i]);
                 DrawRectangleLines(x+7,hotY+7,44,28,Fade(WHITE,.55f));
                 DrawText(TextFormat("%d",i+1),x+8,hotY+39,12,i==selected?GOLD:LIGHTGRAY);
-                DrawText(blockNames[i],x+22,hotY+39,10,i==selected?WHITE:LIGHTGRAY);
+                if(i==selected) DrawText(blockNames[i],x+22,hotY+39,10,WHITE);
             }
             DrawText("WASD MOVE   MOUSE LOOK   SPACE JUMP   LMB MINE   RMB PLACE",18,GetScreenHeight()-112,14,Fade(WHITE,.9f));
             DrawText("T COMMANDS   F2 WORLDS   F1 HELP",18,GetScreenHeight()-24,14,Fade(WHITE,.75f));
