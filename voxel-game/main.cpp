@@ -133,7 +133,6 @@ int main() {
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
     if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }
     else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
-    else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
 
     enum Screen { MAIN_MENU, PLAYING, PAUSED, WORLD_MENU, SETTINGS };
     Screen screen = MAIN_MENU;
@@ -171,6 +170,9 @@ int main() {
     auto startWorld = [&]() {
         GenerateWorld(blocks,worldSize,worldType,seed);
         RebuildHeightMap(blocks,worldSize,groundHeights);
+        if(worldModelReady) UnloadModel(worldModel);
+        worldModel=BuildWorldModel(blocks,worldSize);
+        worldModelReady=true;
         resetCamera();
         screen=PLAYING;
         commandOpen=false;
@@ -193,24 +195,40 @@ int main() {
         } else message="Unknown command. Type /help.";
         command[0]='\0'; commandOpen=false; messageTime=4.0f;
     };
+    int menuFocus=0, menuItemCounter=0;
     auto button = [&](Rectangle r, const char* label, bool hot=false) {
+        int item=menuItemCounter++;
+        if(IsGamepadAvailable(0)) {
+            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%menuItemCounter;
+            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+menuItemCounter)%menuItemCounter;
+        }
+        bool focused=(item==menuFocus);
         Vector2 m=GetMousePosition();
         bool hover=CheckCollisionPointRec(m,r);
-        DrawRectangleRounded(r,0.16f,10, hover?Color{67,105,151,255}:(hot?Color{190,139,54,255}:Color{34,48,70,255}));
-        DrawRectangleRoundedLines(r,0.16f,10,Color{115,145,178,255});
+        bool gamepadActivate=focused && IsGamepadAvailable(0) && IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
+        DrawRectangleRounded(r,0.16f,10, (hover||focused)?Color{67,105,151,255}:(hot?Color{190,139,54,255}:Color{34,48,70,255}));
+        DrawRectangleRoundedLines(r,0.16f,10,focused?GOLD:Color{115,145,178,255});
         int tw=MeasureText(label,22);
         DrawText(label,(int)(r.x+r.width/2-tw/2),(int)(r.y+r.height/2-11),22,RAYWHITE);
-        return hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+        return (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) || gamepadActivate;
     };
     auto drawBackdrop = [&]() {
-        ClearBackground(Color{13,22,38,255});
-        DrawCircle(GetScreenWidth()-100,110,180,Fade(Color{47,91,139,255},0.18f));
-        DrawCircle(90,GetScreenHeight()-70,210,Fade(Color{36,112,91,255},0.13f));
+        ClearBackground(Color{95,151,196,255});
+        int sw=GetScreenWidth(), sh=GetScreenHeight();
+        DrawCircle(sw-180,125,58,Color{255,221,145,255});
+        DrawRectangle(0,sh/2,sw,sh/2,Color{103,158,91,255});
+        for(int i=0;i<9;i++) {
+            int hx=i*(sw/8)-70, hh=110+(int)(noise2(i,3,7)*145);
+            DrawTriangle({(float)hx,(float)sh/2},{(float)hx+170,(float)sh/2-hh},{(float)hx+340,(float)sh/2},Color{74,117,91,255});
+            DrawRectangle(hx,sh/2+hh/3,340,sh/2,Color{72,116,69,255});
+        }
+        DrawRectangle(0,sh-150,sw,150,Fade(Color{16,28,34,255},0.76f));
         DrawText("BLOCKLANDS",48,34,18,Color{125,183,224,255});
         DrawLine(48,64,GetScreenWidth()-48,64,Fade(WHITE,0.18f));
     };
 
     while (!WindowShouldClose()) {
+        menuItemCounter=0;
         float dt=std::min(GetFrameTime(),0.05f);
         if (messageTime>0) messageTime-=dt;
 
@@ -231,11 +249,19 @@ int main() {
                 if(IsKeyDown(KEY_S)) move=Vector3Subtract(move,forward);
                 if(IsKeyDown(KEY_D)) move=Vector3Add(move,right);
                 if(IsKeyDown(KEY_A)) move=Vector3Subtract(move,right);
+                if(IsGamepadAvailable(0)) {
+                    float sx=GetGamepadAxisMovement(0,GAMEPAD_AXIS_LEFT_X);
+                    float sy=GetGamepadAxisMovement(0,GAMEPAD_AXIS_LEFT_Y);
+                    move=Vector3Add(move,Vector3Scale(right,sx));
+                    move=Vector3Add(move,Vector3Scale(forward,-sy));
+                    yaw+=GetGamepadAxisMovement(0,GAMEPAD_AXIS_RIGHT_X)*dt*2.4f;
+                    pitch=Clamp(pitch+GetGamepadAxisMovement(0,GAMEPAD_AXIS_RIGHT_Y)*dt*2.0f,-1.45f,1.45f);
+                }
                 if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
                 camera.position=Vector3Add(camera.position,move);
                 camera.position.x=Clamp(camera.position.x,0.0f,(float)worldSize-1.0f);
                 camera.position.z=Clamp(camera.position.z,0.0f,(float)worldSize-1.0f);
-                if(IsKeyPressed(KEY_SPACE) && onGround) { velocity.y=7.0f; onGround=false; }
+                if((IsKeyPressed(KEY_SPACE) || (IsGamepadAvailable(0) && IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
                 velocity.y-=18.0f*dt;
                 camera.position.y+=velocity.y*dt;
                 int gx=Clamp((int)std::lround(camera.position.x),0,worldSize-1);
@@ -250,6 +276,10 @@ int main() {
                 if(camera.position.y<1.65f) { camera.position.y=1.65f; velocity.y=0; onGround=true; }
                 camera.target=Vector3Add(camera.position,look);
 
+                if(IsGamepadAvailable(0)) {
+                    if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_TRIGGER_1)) selected=(selected+7)%8;
+                    if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) selected=(selected+1)%8;
+                }
                 if(IsKeyPressed(KEY_ONE)) selected=0;
                 if(IsKeyPressed(KEY_TWO)) selected=1;
                 if(IsKeyPressed(KEY_THREE)) selected=2;
@@ -259,7 +289,9 @@ int main() {
                 if(IsKeyPressed(KEY_SEVEN)) selected=6;
                 if(IsKeyPressed(KEY_EIGHT)) selected=7;
 
-                if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_TRIGGER_2));
+            bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_TRIGGER_2));
+            if(minePressed || placePressed) {
                     Ray ray=GetMouseRay({GetScreenWidth()/2.0f,GetScreenHeight()/2.0f},camera);
                     int hit=-1; float nearest=1000.0f; Vector3 normal={0,0,0};
                     for(int i=0;i<(int)blocks.size();++i) {
@@ -267,8 +299,8 @@ int main() {
                         RayCollision c=GetRayCollisionBox(ray,box);
                         if(c.hit && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
                     }
-                    if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { blocks.erase(blocks.begin()+hit); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
-                    else if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                    if(hit>=0 && minePressed) { blocks.erase(blocks.begin()+hit); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
+                    else if(hit>=0 && placePressed) {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
@@ -317,7 +349,7 @@ int main() {
                 DrawRectangle(x+8,hotY+6,38,25,palette[i]);
                 DrawText(TextFormat("%d",i+1),x+22,hotY+33,12,WHITE);
             }
-            DrawText("WASD MOVE   SPACE JUMP   LMB MINE   RMB PLACE   T COMMANDS   F2 WORLDS",18,GetScreenHeight()-103,13,WHITE);
+            DrawText(IsGamepadAvailable(0)?"CONTROLLER: LEFT STICK MOVE | RIGHT STICK LOOK | A JUMP | RT MINE | LT PLACE | LB/RB BLOCKS":"WASD MOVE   SPACE JUMP   LMB MINE   RMB PLACE   T COMMANDS   F2 WORLDS",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
@@ -334,6 +366,7 @@ int main() {
             if(screen==MAIN_MENU) {
                 DrawText("A WORLD BUILT BY YOU", (int)cx-205,118,25,Color{188,210,232,255});
                 DrawText("Explore. Build. Create.",(int)cx-160,153,19,LIGHTGRAY);
+                DrawText("PRESS A / ENTER TO SELECT",(int)cx-130,196,14,Fade(WHITE,.8f));
                 if(button({cx-155,230,310,58},"PLAY",true)) screen=WORLD_MENU;
                 if(button({cx-155,302,310,52},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
                 if(button({cx-155,368,310,52},"QUIT")) break;
