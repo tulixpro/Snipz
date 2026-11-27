@@ -7,6 +7,7 @@
 #include <cstring>
 #include <fstream>
 #include <algorithm>
+#include <cmath>
 
 struct Block { Vector3 p; Color c; };
 
@@ -66,7 +67,7 @@ int main() {
             else if(sscanf(line.c_str(),"fullscreen=%d",&value)==1) fullscreen=value;
         }
     }
-    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | (fullscreen?FLAG_FULLSCREEN_MODE:0));
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | (fullscreen?FLAG_FULLSCREEN_MODE:0));
     InitWindow(W,H,"BLOCKLANDS - Voxel Sandbox");
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
     DisableCursor();
@@ -135,8 +136,14 @@ int main() {
             if(IsKeyPressed(KEY_ENTER)) runCommand();
             if(IsKeyPressed(KEY_ESCAPE)) { commandOpen=false; DisableCursor(); }
         } else {
-            UpdateCamera(&camera,CAMERA_FIRST_PERSON);
-            Vector3 f=Vector3Normalize({camera.target.x-camera.position.x,0,camera.target.z-camera.position.z});
+            // Use one movement system only; UpdateCamera would also apply WASD movement.
+            static float yaw = -PI/2.0f;
+            static float pitch = -0.50f;
+            Vector2 mouse = GetMouseDelta();
+            yaw += mouse.x * 0.0030f;
+            pitch = Clamp(pitch - mouse.y * 0.0030f, -1.50f, 1.50f);
+            Vector3 look = {cosf(yaw)*cosf(pitch), sinf(pitch), sinf(yaw)*cosf(pitch)};
+            Vector3 f=Vector3Normalize({look.x,0,look.z});
             Vector3 r=Vector3Normalize({f.z,0,-f.x});
             Vector3 move={0,0,0};
             if(IsKeyDown(KEY_W)) move=Vector3Add(move,f);
@@ -145,7 +152,7 @@ int main() {
             if(IsKeyDown(KEY_A)) move=Vector3Subtract(move,r);
             if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),creative?8.0f*dt:5.0f*dt);
             camera.position=Vector3Add(camera.position,move);
-            camera.target=Vector3Add(camera.target,move);
+            camera.target=Vector3Add(camera.position,look);
 
             if(IsKeyDown(KEY_SPACE)&&onGround) { velocity.y=7; onGround=false; }
             velocity.y-=18*dt;
@@ -161,21 +168,24 @@ int main() {
             if(IsKeyPressed(KEY_SEVEN)) selected=6;
             if(IsKeyPressed(KEY_EIGHT)) selected=7;
 
-            Ray ray=GetMouseRay({GetScreenWidth()/2.0f,GetScreenHeight()/2.0f},camera);
-            int hit=-1; float nearest=1000; Vector3 normal={0,0,0};
-            for(int i=0;i<(int)blocks.size();++i) {
-                BoundingBox box={{blocks[i].p.x-.5f,blocks[i].p.y-.5f,blocks[i].p.z-.5f},
-                                 {blocks[i].p.x+.5f,blocks[i].p.y+.5f,blocks[i].p.z+.5f}};
-                RayCollision c=GetRayCollisionBox(ray,box);
-                if(c.hit && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
-            }
-            if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) blocks.erase(blocks.begin()+hit);
-            if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-                Vector3 p=Vector3Add(blocks[hit].p,normal);
-                bool occupied=false;
-                for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
-                if(!occupied && p.y>=0 && Vector3Distance(p,camera.position)>1.3f)
-                    blocks.push_back({p,palette[selected]});
+            // Only raycast when the player actually clicks a block.
+            if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                Ray ray=GetMouseRay({GetScreenWidth()/2.0f,GetScreenHeight()/2.0f},camera);
+                int hit=-1; float nearest=1000; Vector3 normal={0,0,0};
+                for(int i=0;i<(int)blocks.size();++i) {
+                    BoundingBox box={{blocks[i].p.x-.5f,blocks[i].p.y-.5f,blocks[i].p.z-.5f},
+                                     {blocks[i].p.x+.5f,blocks[i].p.y+.5f,blocks[i].p.z+.5f}};
+                    RayCollision c=GetRayCollisionBox(ray,box);
+                    if(c.hit && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
+                }
+                if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) blocks.erase(blocks.begin()+hit);
+                if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                    Vector3 p=Vector3Add(blocks[hit].p,normal);
+                    bool occupied=false;
+                    for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
+                    if(!occupied && p.y>=0 && Vector3Distance(p,camera.position)>1.3f)
+                        blocks.push_back({p,palette[selected]});
+                }
             }
             if(IsKeyPressed(KEY_ESCAPE)) { EnableCursor(); message="Cursor released. Press F2 for world creator."; messageTime=3; }
         }
