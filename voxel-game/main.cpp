@@ -198,6 +198,8 @@ int main() {
     camera.up={0,1,0}; camera.fovy=(float)fov; camera.projection=CAMERA_PERSPECTIVE;
     Vector3 velocity={0,0,0};
     bool onGround=false;
+    int health=20, hunger=20, foodCount=5;
+    float stamina=100.0f, hungerTimer=0.0f, starvationTimer=0.0f, regenTimer=0.0f;
     float yaw=-PI/2.0f, pitch=-0.38f;
 
     auto resetCamera = [&]() {
@@ -231,7 +233,7 @@ int main() {
         else if (s=="/day") { night=false; message="Daytime enabled."; }
         else if (s=="/night") { night=true; message="Nighttime enabled."; }
         else if (s=="/creative") { creative=true; message="Creative mode enabled."; }
-        else if (s=="/survival") { creative=false; message="Survival mode enabled (prototype)."; }
+        else if (s=="/survival") { creative=false; health=20; hunger=20; stamina=100.0f; foodCount=5; message="Survival mode enabled! You have 5 apples."; }
         else if (s=="/seed") message=TextFormat("World seed: %d",seed);
         else if (s.rfind("/give ",0)==0) {
             int v=atoi(s.substr(6).c_str());
@@ -311,6 +313,10 @@ int main() {
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
             if (IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_MIDDLE_RIGHT))) { screen=PAUSED; EnableCursor(); }
             if (IsKeyPressed(KEY_F2)) { screen=WORLD_MENU; EnableCursor(); }
+            if(!creative && (IsKeyPressed(KEY_Q) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)))) {
+                if(foodCount>0 && hunger<20) { foodCount--; hunger=std::min(20,hunger+6); message="You ate an apple. Hunger restored."; messageTime=2.5f; }
+                else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
+            }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
             if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | LMB mine | RMB build"; messageTime=5; }
             if (!commandOpen) {
@@ -339,7 +345,14 @@ int main() {
                     yaw+=lookX*dt*(controllerSensitivity/10.0f);
                     pitch=Clamp(pitch+lookY*dt*(controllerSensitivity/12.0f),-1.45f,1.45f);
                 }
-                if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
+                bool sprinting=!creative && (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
+                if(sprinting && stamina>0.5f && Vector3Length(move)>0) {
+                    move=Vector3Scale(Vector3Normalize(move),8.0f*dt);
+                    stamina=std::max(0.0f,stamina-24.0f*dt);
+                } else {
+                    if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
+                    if(!sprinting) stamina=std::min(100.0f,stamina+16.0f*dt);
+                }
                 camera.position=Vector3Add(camera.position,move);
                 if((IsKeyPressed(KEY_SPACE) || ((activeGamepad>=0) && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
                 velocity.y-=18.0f*dt;
@@ -349,8 +362,37 @@ int main() {
                 bool insideWorld=gx>=0 && gx<worldSize && gz>=0 && gz<worldSize;
                 int safeHeight=(insideWorld && !groundHeights.empty() && groundHeights[gx*worldSize+gz]>0)?groundHeights[gx*worldSize+gz]:-1000;
                 float floorY=(float)safeHeight+1.65f;
-                if(insideWorld && camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
+                bool wasOnGround=onGround;
+                if(insideWorld && camera.position.y<floorY) {
+                    if(!creative && !wasOnGround && velocity.y < -11.0f) {
+                        int impact=(int)std::floor((-velocity.y-10.0f)*0.75f);
+                        health=std::max(0,health-impact);
+                        message=TextFormat("Fall damage! -%d HP",impact);
+                        messageTime=2.5f;
+                    }
+                    camera.position.y=floorY; velocity.y=0; onGround=true;
+                }
+                if(!creative) {
+                    hungerTimer+=dt;
+                    if(hungerTimer>=35.0f) { hungerTimer=0.0f; hunger=std::max(0,hunger-1); }
+                    if(hunger==0) {
+                        starvationTimer+=dt;
+                        if(starvationTimer>=3.0f) { starvationTimer=0.0f; health=std::max(0,health-1); }
+                    } else starvationTimer=0.0f;
+                    if(hunger>=18 && health<20) {
+                        regenTimer+=dt;
+                        if(regenTimer>=5.0f) { regenTimer=0.0f; health=std::min(20,health+1); }
+                    } else regenTimer=0.0f;
+                    if(stamina<100.0f && !sprinting) stamina=std::min(100.0f,stamina+12.0f*dt);
+                    if(health<=0) {
+                        health=20; hunger=16; stamina=100.0f;
+                        resetCamera();
+                        message="You ran out of health. Respawned!";
+                        messageTime=4.0f;
+                    }
+                }
                 if(camera.position.y<-24.0f) {
+                    if(!creative) { health=std::max(0,health-5); hunger=std::max(0,hunger-1); }
                     resetCamera();
                     message="You fell into the void. Respawned at spawn.";
                     messageTime=4.0f;
@@ -415,6 +457,16 @@ int main() {
             DrawText("BLOCKLANDS",28,22,25,RAYWHITE);
             DrawFPS(29,55);
             DrawText(TextFormat("%s  |  %s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL"),286,24,18,RAYWHITE);
+            if(!creative) {
+                DrawRectangleRounded({14,100,270,96},.12f,8,Fade(Color{8,14,26,255},.84f));
+                DrawText(TextFormat("HEALTH  %d / 20",health),28,109,15,Color{255,125,125,255});
+                DrawRectangle(28,130,230,10,Color{65,35,42,255});
+                DrawRectangle(28,130,(int)(230.0f*health/20.0f),10,Color{220,65,75,255});
+                DrawText(TextFormat("HUNGER  %d / 20   |   APPLES %d",hunger,foodCount),28,148,14,Color{255,205,120,255});
+                DrawRectangle(28,168,230,8,Color{65,52,35,255});
+                DrawRectangle(28,168,(int)(230.0f*hunger/20.0f),8,Color{215,151,60,255});
+                DrawText(TextFormat("STAMINA  %d%%", (int)stamina),28,180,11,SKYBLUE);
+            }
             DrawText(TextFormat("WORLD %d x %d  |  SEED %d",worldSize,worldSize,seed),286,50,14,Fade(WHITE,.85f));
             DrawRectangleRounded({(float)GetScreenWidth()-210,14,196,64},.14f,8,Fade(Color{8,14,26,255},.8f));
             DrawText(night?"NIGHT":"DAY",GetScreenWidth()-190,24,18,night?SKYBLUE:GOLD);
@@ -430,7 +482,7 @@ int main() {
                 DrawRectangle(x+8,hotY+6,38,25,palette[i]);
                 DrawText(TextFormat("%d",i+1),x+22,hotY+33,12,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LEFT STICK MOVE | RIGHT STICK LOOK | A JUMP | RT MINE | LT PLACE | LB/RB BLOCKS":"WASD MOVE (W FORWARD) | MOUSE LOOK | SPACE JUMP | LMB MINE | RMB PLACE | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | B EAT | RT MINE | LT PLACE":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | LMB MINE | RMB PLACE | Q EAT | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
