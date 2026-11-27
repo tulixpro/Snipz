@@ -78,7 +78,7 @@ int main() {
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
 
     enum Screen { MAIN_MENU, PLAYING, PAUSED, WORLD_MENU, SETTINGS };
-    Screen screen = MAIN_MENU;
+    Screen screen = MAIN_MENU;\n    Screen settingsReturn = MAIN_MENU;
     std::vector<Block> blocks;
     int worldSize=64, worldType=0, seed=2026, selected=0;
     bool creative=true, night=false, commandOpen=false;
@@ -257,17 +257,17 @@ int main() {
                 DrawText("A WORLD BUILT BY YOU", (int)cx-205,118,25,Color{188,210,232,255});
                 DrawText("Explore. Build. Create.",(int)cx-160,153,19,LIGHTGRAY);
                 if(button({cx-155,230,310,58},"PLAY",true)) screen=WORLD_MENU;
-                if(button({cx-155,302,310,52},"SETTINGS")) screen=SETTINGS;
+                if(button({cx-155,302,310,52},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
                 if(button({cx-155,368,310,52},"QUIT")) break;
                 DrawText("A small voxel sandbox prototype",(int)cx-145,GetScreenHeight()-54,14,Fade(WHITE,.55f));
             } else if(screen==PAUSED) {
                 DrawText("PAUSED",(int)cx-85,126,34,WHITE);
                 if(button({cx-155,215,310,56},"RESUME",true)) { screen=PLAYING; DisableCursor(); }
                 if(button({cx-155,283,310,52},"NEW WORLD")) screen=WORLD_MENU;
-                if(button({cx-155,347,310,52},"SETTINGS")) screen=SETTINGS;
+                if(button({cx-155,347,310,52},"SETTINGS")) { settingsReturn=PAUSED; screen=SETTINGS; }
                 if(button({cx-155,411,310,52},"MAIN MENU")) { screen=MAIN_MENU; EnableCursor(); }
             } else if(screen==WORLD_MENU) {
-                DrawText("CREATE YOUR WORLD",(int)cx-190,100,30,WHITE);
+                DrawText("PLAY  /  WORLD SELECT",(int)cx-205,100,30,WHITE);\n                DrawText("Build a custom world or let Blocklands surprise you.",(int)cx-225,137,16,LIGHTGRAY);
                 DrawText(TextFormat("WORLD TYPE:  %s",worldNames[worldType]),(int)cx-155,175,20,SKYBLUE);
                 if(button({cx-220,212,64,48},"<")) worldType=(worldType+3)%4;
                 if(button({cx+156,212,64,48},">")) worldType=(worldType+1)%4;
@@ -286,7 +286,7 @@ int main() {
                     SetTargetFPS(menuFPS<=0?0:menuFPS);
                 }
                 DrawText("Display settings are read from settings.ini",(int)cx-190,365,15,LIGHTGRAY);
-                if(button({cx-155,445,310,54},"BACK")) screen=PAUSED;
+                if(button({cx-155,445,310,54},"BACK")) screen=settingsReturn;
             }
         }
         EndDrawing();
