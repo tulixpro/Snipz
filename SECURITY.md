@@ -10,6 +10,12 @@ Do not connect real users or upload personal media until the controls below are 
 
 The API Worker also sends restrictive browser/API headers (including no-sniff, no-referrer, frame denial, a deny-all CSP, no-store, and cross-origin isolation hints). HSTS is limited to the Worker host rather than using `includeSubDomains` or `preload`, which could unintentionally affect unrelated subdomains. See [the negative security test plan](./cloudflare/SECURITY-TEST-PLAN.md).
 
+## Added database design proposal (not deployed)
+
+The D1 schema now includes proposed tables for user blocks, friend requests, private-by-default account settings, safety reports covering users/videos/comments/messages, and moderator actions. The schema file has **not** been applied to D1. These tables do not protect anything until authenticated API routes enforce them on every request. Authentication must come from a maintained identity provider; never trust a user ID, role, or permission sent by the browser.
+
+The Worker now compares the incoming Origin header to the configured HTTPS origin exactly, rather than normalizing it. This is an additional browser-origin check, not authentication: non-browser clients can omit Origin, so every future private route still needs token verification and authorization.
+
 ## Required before any real-user pilot
 
 ### Identity and sessions
