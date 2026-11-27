@@ -10,14 +10,15 @@ if(MSVC)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+# Use raylib's OpenGL 2.1 backend for compatibility with older GPUs/drivers.
+set(OPENGL_VERSION "2.1" CACHE STRING "OpenGL version" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(raylib GIT_REPOSITORY https://github.com/raysan5/raylib.git GIT_TAG 5.5)
 FetchContent_MakeAvailable(raylib)
+
 add_executable(Blocklands main.cpp)
 target_link_libraries(Blocklands PRIVATE raylib)
 if(WIN32)
   target_link_libraries(Blocklands PRIVATE winmm)
-  add_executable(BlocklandsLauncher WIN32 launcher.cpp)
-  target_link_libraries(BlocklandsLauncher PRIVATE shell32)
 endif()
