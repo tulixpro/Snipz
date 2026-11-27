@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <fstream>
+#include <cstring>
 static HWND resolutionBox, fpsBox, fullscreenCheck, statusText;
 static const char* resolutions[]={"1280x720","1600x900","1920x1080"};
 static const int widths[]={1280,1600,1920}, heights[]={720,900,1080}, fpsValues[]={60,120,144,0};
@@ -38,6 +39,13 @@ static LRESULT CALLBACK WindowProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
  return DefWindowProcA(hwnd,msg,wp,lp);
 }
 int WINAPI WinMain(HINSTANCE inst,HINSTANCE,LPSTR,int show) {
+ // Resolve the game and settings relative to this launcher, not the caller's working directory.
+ char exePath[MAX_PATH]={0};
+ DWORD pathLength=GetModuleFileNameA(nullptr,exePath,MAX_PATH);
+ if(pathLength>0 && pathLength<MAX_PATH) {
+  char* slash=strrchr(exePath,92);
+  if(slash) { *slash=0; SetCurrentDirectoryA(exePath); }
+ }
  WNDCLASSA wc={}; wc.lpfnWndProc=WindowProc; wc.hInstance=inst; wc.lpszClassName="BlocklandsLauncherWindow"; wc.hCursor=LoadCursor(nullptr,IDC_ARROW); wc.hbrBackground=(HBRUSH)(COLOR_WINDOW+1); RegisterClassA(&wc);
  HWND w=CreateWindowA(wc.lpszClassName,"BLOCKLANDS Launcher",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,430,440,nullptr,nullptr,inst,nullptr);
  if(!w) return 1; ShowWindow(w,show); MSG m; while(GetMessageA(&m,nullptr,0,0)>0){TranslateMessage(&m);DispatchMessageA(&m);} return 0;
