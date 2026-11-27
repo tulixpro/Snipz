@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <algorithm>
 
 struct Block { Vector3 p; Color c; };
@@ -53,10 +54,21 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
 }
 
 int main() {
-    const int W=1280, H=720;
-    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
+    int W=1280, H=720, fpsLimit=120, fullscreen=0;
+    {
+        std::ifstream cfg("settings.ini");
+        std::string line;
+        while(std::getline(cfg,line)) {
+            int value=0;
+            if(sscanf(line.c_str(),"width=%d",&value)==1) W=std::max(800,std::min(2560,value));
+            else if(sscanf(line.c_str(),"height=%d",&value)==1) H=std::max(600,std::min(1600,value));
+            else if(sscanf(line.c_str(),"fps=%d",&value)==1) fpsLimit=value;
+            else if(sscanf(line.c_str(),"fullscreen=%d",&value)==1) fullscreen=value;
+        }
+    }
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | (fullscreen?FLAG_FULLSCREEN_MODE:0));
     InitWindow(W,H,"BLOCKLANDS - Voxel Sandbox");
-    SetTargetFPS(120);
+    SetTargetFPS(fpsLimit<=0?0:fpsLimit);
     DisableCursor();
 
     std::vector<Block> blocks;
