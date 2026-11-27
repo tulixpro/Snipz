@@ -48,12 +48,8 @@ export default {
     }
 
     // Reject browser requests from every origin except the one configured.
-    if (requestOrigin) {
-      let parsedOrigin;
-      try { parsedOrigin = new URL(requestOrigin).origin; } catch { parsedOrigin = ""; }
-      if (parsedOrigin !== configuredOrigin) {
-        return json({ error: "Origin not allowed" }, 403);
-      }
+    if (requestOrigin && requestOrigin !== configuredOrigin) {
+      return json({ error: "Origin not allowed" }, 403);
     }
     const corsOrigin = requestOrigin ? configuredOrigin : null;
 
