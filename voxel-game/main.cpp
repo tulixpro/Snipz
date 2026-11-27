@@ -59,13 +59,13 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
         int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
         if(x<0||x>=size||z<0||z>=size||y<0||y>=MAX_Y) continue;
         float x0=x-.5f,x1=x+.5f,y0=y-.5f,y1=y+.5f,z0=z-.5f,z1=z+.5f;
-        const Color col=block.c;
-        if(!has(x,y+1,z)) face({0,1,0},{x0,y1,z0},{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},col);
-        if(!has(x,y-1,z)) face({0,-1,0},{x0,y0,z1},{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},col);
-        if(!has(x-1,y,z)) face({-1,0,0},{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y1,z0},col);
-        if(!has(x+1,y,z)) face({1,0,0},{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y1,z1},col);
-        if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},col);
-        if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},col);
+        auto shade=[](Color c,float f){ return Color{(unsigned char)(c.r*f),(unsigned char)(c.g*f),(unsigned char)(c.b*f),c.a}; };
+        if(!has(x,y+1,z)) face({0,1,0},{x0,y1,z0},{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},shade(block.c,1.12f));
+        if(!has(x,y-1,z)) face({0,-1,0},{x0,y0,z1},{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},shade(block.c,.55f));
+        if(!has(x-1,y,z)) face({-1,0,0},{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y1,z0},shade(block.c,.78f));
+        if(!has(x+1,y,z)) face({1,0,0},{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y1,z1},shade(block.c,.86f));
+        if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},shade(block.c,.72f));
+        if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},shade(block.c,.92f));
     }
     Mesh mesh={};
     mesh.vertexCount=(int)(vertices.size()/3);
@@ -114,7 +114,7 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
 }
 
 int main() {
-    int W=1280, H=720, fpsLimit=120, fullscreen=0, graphicsQuality=1;
+    int W=1280, H=720, fpsLimit=120, fullscreen=0, graphicsQuality=1, fov=75, mouseSensitivity=25, controllerSensitivity=24;
     {
         std::ifstream cfg("settings.ini");
         std::string line;
@@ -125,6 +125,9 @@ int main() {
             else if(sscanf(line.c_str(),"fps=%d",&value)==1) fpsLimit=value;
             else if(sscanf(line.c_str(),"fullscreen=%d",&value)==1) fullscreen=value;
             else if(sscanf(line.c_str(),"graphics=%d",&value)==1) graphicsQuality=Clamp(value,0,2);
+            else if(sscanf(line.c_str(),"fov=%d",&value)==1) fov=Clamp(value,60,100);
+            else if(sscanf(line.c_str(),"mouse_sens=%d",&value)==1) mouseSensitivity=Clamp(value,10,60);
+            else if(sscanf(line.c_str(),"controller_sens=%d",&value)==1) controllerSensitivity=Clamp(value,10,60);
         }
     }
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | (fullscreen?FLAG_FULLSCREEN_MODE:0));
@@ -147,11 +150,12 @@ int main() {
     std::string message="Welcome to Blocklands!";
     float messageTime=4.0f;
     int menuFPS = fpsLimit;
+    int activeGamepad=-1;
 
     Camera3D camera={};
     camera.position={worldSize/2.0f,12.0f,worldSize/2.0f+18};
     camera.target={worldSize/2.0f,4.0f,worldSize/2.0f};
-    camera.up={0,1,0}; camera.fovy=75; camera.projection=CAMERA_PERSPECTIVE;
+    camera.up={0,1,0}; camera.fovy=(float)fov; camera.projection=CAMERA_PERSPECTIVE;
     Vector3 velocity={0,0,0};
     bool onGround=false;
     float yaw=-PI/2.0f, pitch=-0.38f;
@@ -165,6 +169,7 @@ int main() {
         yaw=-PI/2.0f; pitch=-0.22f;
         Vector3 look={cosf(yaw)*cosf(pitch),sinf(pitch),sinf(yaw)*cosf(pitch)};
         camera.target=Vector3Add(camera.position,look);
+                camera.fovy=(float)fov;
         velocity={0,0,0}; onGround=false;
     };
     auto startWorld = [&]() {
@@ -198,9 +203,9 @@ int main() {
     int menuFocus=0, menuItemCounter=0;
     auto button = [&](Rectangle r, const char* label, bool hot=false) {
         int item=menuItemCounter++;
-        int totalItems=screen==MAIN_MENU?3:(screen==PAUSED?4:(screen==WORLD_MENU?5:3));
-        if(IsGamepadAvailable(0) && item==0) {
-            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%totalItems;
+        int totalItems=screen==MAIN_MENU?3:(screen==PAUSED?4:(screen==WORLD_MENU?7:7));
+        if((activeGamepad>=0) && item==0) {
+            if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%totalItems;
             if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+totalItems)%totalItems;
         }
         bool focused=(item==menuFocus);
@@ -238,6 +243,8 @@ int main() {
 
     while (!WindowShouldClose()) {
         menuItemCounter=0;
+        activeGamepad=-1;
+        for(int gp=0;gp<4;gp++) if(IsGamepadAvailable(gp)) { activeGamepad=gp; break; }
         float dt=std::min(GetFrameTime(),0.05f);
         if (messageTime>0) messageTime-=dt;
 
@@ -268,8 +275,8 @@ int main() {
             if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | LMB mine | RMB build"; messageTime=5; }
             if (!commandOpen) {
                 Vector2 mouse=GetMouseDelta();
-                yaw += mouse.x*0.0025f;
-                pitch=Clamp(pitch-mouse.y*0.0025f,-1.45f,1.45f);
+                yaw += mouse.x*(mouseSensitivity/10000.0f);
+                pitch=Clamp(pitch-mouse.y*(mouseSensitivity/10000.0f),-1.45f,1.45f);
                 Vector3 look={cosf(yaw)*cosf(pitch),sinf(pitch),sinf(yaw)*cosf(pitch)};
                 Vector3 forward=Vector3Normalize({look.x,0,look.z});
                 Vector3 right=Vector3Normalize({forward.z,0,-forward.x});
@@ -279,7 +286,7 @@ int main() {
                 if(IsKeyDown(KEY_D)) move=Vector3Add(move,right);
                 if(IsKeyDown(KEY_A)) move=Vector3Subtract(move,right);
                 if(IsGamepadAvailable(0)) {
-                    float sx=GetGamepadAxisMovement(0,GAMEPAD_AXIS_LEFT_X);
+                    float sx=GetGamepadAxisMovement(activeGamepad,GAMEPAD_AXIS_LEFT_X);
                     float sy=GetGamepadAxisMovement(0,GAMEPAD_AXIS_LEFT_Y);
                     move=Vector3Add(move,Vector3Scale(right,sx));
                     move=Vector3Add(move,Vector3Scale(forward,-sy));
@@ -422,21 +429,29 @@ int main() {
                 if(button({cx-155,466,310,58},"GENERATE WORLD",true)) startWorld();
                 if(button({cx-155,536,310,48},"BACK")) screen=(blocks.empty()?MAIN_MENU:PAUSED);
             } else if(screen==SETTINGS) {
-                DrawText("SETTINGS",(int)cx-100,130,32,WHITE);
-                DrawText(TextFormat("GRAPHICS: %s",graphicsQuality==0?"LOW":(graphicsQuality==1?"NORMAL":"HIGH")),(int)cx-125,205,22,SKYBLUE);
-                if(button({cx-155,245,310,48},"CHANGE GRAPHICS")) { graphicsQuality=(graphicsQuality+1)%3; int nw=graphicsQuality==0?960:(graphicsQuality==1?1280:1600); int nh=graphicsQuality==0?540:(graphicsQuality==1?720:900); SetWindowSize(nw,nh); }
-                DrawText(TextFormat("FPS LIMIT: %s",menuFPS<=0?"UNLIMITED":TextFormat("%d",menuFPS)),(int)cx-125,320,22,SKYBLUE);
-                if(button({cx-155,365,310,48},"CHANGE FPS LIMIT")) {
+                DrawText("SETTINGS",(int)cx-100,90,30,WHITE);
+                DrawText(TextFormat("GRAPHICS: %s",graphicsQuality==0?"LOW":(graphicsQuality==1?"NORMAL":"HIGH")),(int)cx-310,155,17,SKYBLUE);
+                if(button({cx-310,182,285,42},"CHANGE QUALITY")) { graphicsQuality=(graphicsQuality+1)%3; int nw=graphicsQuality==0?960:(graphicsQuality==1?1280:1600); int nh=graphicsQuality==0?540:(graphicsQuality==1?720:900); SetWindowSize(nw,nh); }
+                DrawText(TextFormat("FPS LIMIT: %s",menuFPS<=0?"UNLIMITED":TextFormat("%d",menuFPS)),(int)cx+25,155,17,SKYBLUE);
+                if(button({cx+25,182,285,42},"CHANGE FPS")) {
                     if(menuFPS==60) menuFPS=120; else if(menuFPS==120) menuFPS=144; else if(menuFPS==144) menuFPS=0; else menuFPS=60;
                     SetTargetFPS(menuFPS<=0?0:menuFPS);
                 }
-                DrawText("LOW: 960x540  |  NORMAL: 1280x720  |  HIGH: 1600x900",(int)cx-250,420,14,LIGHTGRAY);
-                if(button({cx-155,470,310,50},"BACK")) screen=settingsReturn;
+                DrawText(TextFormat("FIELD OF VIEW: %d",fov),(int)cx-310,252,17,SKYBLUE);
+                if(button({cx-310,279,285,42},"CHANGE FOV")) { fov+=10; if(fov>100) fov=60; camera.fovy=(float)fov; }
+                DrawText(TextFormat("MOUSE SENSITIVITY: %d",mouseSensitivity),(int)cx+25,252,17,SKYBLUE);
+                if(button({cx+25,279,285,42},"CHANGE MOUSE")) { mouseSensitivity+=5; if(mouseSensitivity>60) mouseSensitivity=10; }
+                DrawText(TextFormat("CONTROLLER SENSITIVITY: %d",controllerSensitivity),(int)cx-310,349,17,SKYBLUE);
+                if(button({cx-310,376,285,42},"CHANGE CONTROLLER")) { controllerSensitivity+=5; if(controllerSensitivity>60) controllerSensitivity=10; }
+                DrawText(TextFormat("FULLSCREEN: %s",fullscreen?"ON":"OFF"),(int)cx+25,349,17,SKYBLUE);
+                if(button({cx+25,376,285,42},"TOGGLE FULLSCREEN")) { ToggleFullscreen(); fullscreen=!fullscreen; }
+                DrawText("LOW 960x540 | NORMAL 1280x720 | HIGH 1600x900",(int)cx-190,455,14,LIGHTGRAY);
+                if(button({cx-155,495,310,48},"BACK")) screen=settingsReturn;
             }
         }
         EndDrawing();
     }
-    { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\nheight="<<GetScreenHeight()<<"\nfps="<<menuFPS<<"\nfullscreen="<<fullscreen<<"\ngraphics="<<graphicsQuality<<"\n"; }
+    { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\nheight="<<GetScreenHeight()<<"\nfps="<<menuFPS<<"\nfullscreen="<<fullscreen<<"\ngraphics="<<graphicsQuality<<"\nfov="<<fov<<"\nmouse_sens="<<mouseSensitivity<<"\ncontroller_sens="<<controllerSensitivity<<"\n"; }
     if(worldModelReady) UnloadModel(worldModel);
     EnableCursor();
     CloseWindow();
