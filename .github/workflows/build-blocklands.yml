@@ -1,0 +1,21 @@
+name: Build Blocklands
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "voxel-game/**"
+      - ".github/workflows/build-blocklands.yml"
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S voxel-game -B voxel-game/build -A x64
+      - name: Build
+        run: cmake --build voxel-game/build --config Release
+      - name: Upload Windows game
+        uses: actions/upload-artifact@v4
+        with:
+          name: Blocklands-Windows-x64
+          path: voxel-game/build/Release/Blocklands.exe
