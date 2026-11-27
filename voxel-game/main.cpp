@@ -205,13 +205,13 @@ int main() {
         int item=menuItemCounter++;
         int totalItems=screen==MAIN_MENU?3:(screen==PAUSED?4:(screen==WORLD_MENU?7:7));
         if((activeGamepad>=0) && item==0) {
-            if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%totalItems;
-            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+totalItems)%totalItems;
+            if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%totalItems;
+            if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+totalItems)%totalItems;
         }
         bool focused=(item==menuFocus);
         Vector2 m=GetMousePosition();
         bool hover=CheckCollisionPointRec(m,r);
-        bool gamepadActivate=focused && IsGamepadAvailable(0) && IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
+        bool gamepadActivate=focused && (activeGamepad>=0) && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
         DrawRectangleRounded(r,0.16f,10, (hover||focused)?Color{67,105,151,255}:(hot?Color{190,139,54,255}:Color{34,48,70,255}));
         DrawRectangleRoundedLines(r,0.16f,10,focused?GOLD:Color{115,145,178,255});
         int tw=MeasureText(label,22);
@@ -249,16 +249,16 @@ int main() {
         if (messageTime>0) messageTime-=dt;
 
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
-            if(IsKeyPressed(KEY_E) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
+            if(IsKeyPressed(KEY_E) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
         }
         if (screen==PLAYING && inventoryOpen) {
-            if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
-            if(IsGamepadAvailable(0)) {
-                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_LEFT)) inventoryCursor=std::max(0,inventoryCursor-1);
-                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+1);
-                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_UP)) inventoryCursor=std::max(0,inventoryCursor-3);
-                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_DOWN)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+3);
-                if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) selected=inventoryCursor;
+            if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
+            if((activeGamepad>=0)) {
+                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_LEFT)) inventoryCursor=std::max(0,inventoryCursor-1);
+                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+1);
+                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_UP)) inventoryCursor=std::max(0,inventoryCursor-3);
+                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+3);
+                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) selected=inventoryCursor;
             }
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 float panelX=GetScreenWidth()/2.0f-270.0f, panelY=GetScreenHeight()/2.0f-190.0f;
@@ -285,19 +285,25 @@ int main() {
                 if(IsKeyDown(KEY_S)) move=Vector3Subtract(move,forward);
                 if(IsKeyDown(KEY_D)) move=Vector3Add(move,right);
                 if(IsKeyDown(KEY_A)) move=Vector3Subtract(move,right);
-                if(IsGamepadAvailable(0)) {
+                if((activeGamepad>=0)) {
                     float sx=GetGamepadAxisMovement(activeGamepad,GAMEPAD_AXIS_LEFT_X);
-                    float sy=GetGamepadAxisMovement(0,GAMEPAD_AXIS_LEFT_Y);
+                    float sy=GetGamepadAxisMovement(activeGamepad,GAMEPAD_AXIS_LEFT_Y);
+                    float lookX=GetGamepadAxisMovement(activeGamepad,GAMEPAD_AXIS_RIGHT_X);
+                    float lookY=GetGamepadAxisMovement(activeGamepad,GAMEPAD_AXIS_RIGHT_Y);
+                    if(fabsf(sx)<0.16f) sx=0;
+                    if(fabsf(sy)<0.16f) sy=0;
+                    if(fabsf(lookX)<0.16f) lookX=0;
+                    if(fabsf(lookY)<0.16f) lookY=0;
                     move=Vector3Add(move,Vector3Scale(right,sx));
                     move=Vector3Add(move,Vector3Scale(forward,-sy));
-                    yaw+=GetGamepadAxisMovement(0,GAMEPAD_AXIS_RIGHT_X)*dt*2.4f;
-                    pitch=Clamp(pitch+GetGamepadAxisMovement(0,GAMEPAD_AXIS_RIGHT_Y)*dt*2.0f,-1.45f,1.45f);
+                    yaw+=lookX*dt*(controllerSensitivity/10.0f);
+                    pitch=Clamp(pitch+lookY*dt*(controllerSensitivity/12.0f),-1.45f,1.45f);
                 }
                 if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
                 camera.position=Vector3Add(camera.position,move);
                 camera.position.x=Clamp(camera.position.x,0.0f,(float)worldSize-1.0f);
                 camera.position.z=Clamp(camera.position.z,0.0f,(float)worldSize-1.0f);
-                if((IsKeyPressed(KEY_SPACE) || (IsGamepadAvailable(0) && IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
+                if((IsKeyPressed(KEY_SPACE) || ((activeGamepad>=0) && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
                 velocity.y-=18.0f*dt;
                 camera.position.y+=velocity.y*dt;
                 int gx=Clamp((int)std::lround(camera.position.x),0,worldSize-1);
@@ -312,9 +318,9 @@ int main() {
                 if(camera.position.y<1.65f) { camera.position.y=1.65f; velocity.y=0; onGround=true; }
                 camera.target=Vector3Add(camera.position,look);
 
-                if(IsGamepadAvailable(0)) {
-                    if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_TRIGGER_1)) selected=(selected+7)%8;
-                    if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) selected=(selected+1)%8;
+                if((activeGamepad>=0)) {
+                    if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_1)) selected=(selected+7)%8;
+                    if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) selected=(selected+1)%8;
                 }
                 if(IsKeyPressed(KEY_ONE)) selected=0;
                 if(IsKeyPressed(KEY_TWO)) selected=1;
@@ -325,8 +331,8 @@ int main() {
                 if(IsKeyPressed(KEY_SEVEN)) selected=6;
                 if(IsKeyPressed(KEY_EIGHT)) selected=7;
 
-                bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_TRIGGER_2));
-            bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_TRIGGER_2));
+                bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_2));
+            bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_2));
             if(minePressed || placePressed) {
                     Ray ray=GetMouseRay({GetScreenWidth()/2.0f,GetScreenHeight()/2.0f},camera);
                     int hit=-1; float nearest=1000.0f; Vector3 normal={0,0,0};
@@ -385,7 +391,7 @@ int main() {
                 DrawRectangle(x+8,hotY+6,38,25,palette[i]);
                 DrawText(TextFormat("%d",i+1),x+22,hotY+33,12,WHITE);
             }
-            DrawText(IsGamepadAvailable(0)?"CONTROLLER: LEFT STICK MOVE | RIGHT STICK LOOK | A JUMP | RT MINE | LT PLACE | LB/RB BLOCKS":"WASD MOVE   SPACE JUMP   LMB MINE   RMB PLACE   T COMMANDS   F2 WORLDS",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"CONTROLLER: LEFT STICK MOVE | RIGHT STICK LOOK | A JUMP | RT MINE | LT PLACE | LB/RB BLOCKS":"WASD MOVE   SPACE JUMP   LMB MINE   RMB PLACE   T COMMANDS   F2 WORLDS",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
