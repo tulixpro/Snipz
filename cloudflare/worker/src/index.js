@@ -6,8 +6,13 @@ const SECURITY_HEADERS = {
   "Cross-Origin-Resource-Policy": "same-site",
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cache-Control": "no-store",
-  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+  "Strict-Transport-Security": "max-age=31536000",
+  "X-DNS-Prefetch-Control": "off",
+  "X-Permitted-Cross-Domain-Policies": "none",
+  "X-Robots-Tag": "noindex, nofollow",
+  "Origin-Agent-Cluster": "?1",
+  "Pragma": "no-cache",
 };
 
 function json(data, status, origin) {
