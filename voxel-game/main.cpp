@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "raymath.h"
+#include "rlgl.h"
 #include <vector>
 #include <string>
 #include <cstdio>
@@ -26,6 +27,44 @@ static const Color palette[] = {
 static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick"};
 static const char* worldNames[] = {"Green Valley","Flatlands","Highlands","Island"};
 static const int paletteCount = 8;
+
+static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::vector<int>& heights) {
+    heights.assign(size * size, 0);
+    for (const auto& b : blocks) {
+        int x=(int)std::lround(b.p.x), z=(int)std::lround(b.p.z), y=(int)std::lround(b.p.y);
+        if (x>=0 && x<size && z>=0 && z<size && y>=0) heights[x*size+z]=std::max(heights[x*size+z],y+1);
+    }
+}
+
+static void DrawWorldFast(const std::vector<Block>& blocks, int size) {
+    constexpr int MAX_Y=64;
+    std::vector<unsigned char> solid(size*size*MAX_Y,0);
+    auto index=[&](int x,int y,int z){ return (y*size+z)*size+x; };
+    for (const auto& b:blocks) {
+        int x=(int)std::lround(b.p.x), y=(int)std::lround(b.p.y), z=(int)std::lround(b.p.z);
+        if(x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y) solid[index(x,y,z)]=1;
+    }
+    auto has=[&](int x,int y,int z){ return x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y&&solid[index(x,y,z)]!=0; };
+    auto face=[](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color) {
+        rlColor4ub(color.r,color.g,color.b,color.a); rlNormal3f(n.x,n.y,n.z);
+        rlVertex3f(a.x,a.y,a.z); rlVertex3f(b.x,b.y,b.z); rlVertex3f(c.x,c.y,c.z);
+        rlVertex3f(a.x,a.y,a.z); rlVertex3f(c.x,c.y,c.z); rlVertex3f(d.x,d.y,d.z);
+    };
+    rlBegin(RL_TRIANGLES);
+    for(const auto& block:blocks) {
+        int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
+        if(x<0||x>=size||z<0||z>=size||y<0||y>=MAX_Y) continue;
+        float x0=x-.5f,x1=x+.5f,y0=y-.5f,y1=y+.5f,z0=z-.5f,z1=z+.5f;
+        const Color col=block.c;
+        if(!has(x,y+1,z)) face({0,1,0},{x0,y1,z0},{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},col);
+        if(!has(x,y-1,z)) face({0,-1,0},{x0,y0,z1},{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},col);
+        if(!has(x-1,y,z)) face({-1,0,0},{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y1,z0},col);
+        if(!has(x+1,y,z)) face({1,0,0},{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y1,z1},col);
+        if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},col);
+        if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},col);
+    }
+    rlEnd();
+}
 
 static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int seed) {
     blocks.clear();
@@ -81,6 +120,7 @@ int main() {
     Screen screen = MAIN_MENU;
     Screen settingsReturn = MAIN_MENU;
     std::vector<Block> blocks;
+    std::vector<int> groundHeights;
     int worldSize=64, worldType=0, seed=2026, selected=0;
     bool creative=true, night=false, commandOpen=false;
     char command[128]={0};
@@ -97,14 +137,19 @@ int main() {
     float yaw=-PI/2.0f, pitch=-0.38f;
 
     auto resetCamera = [&]() {
-        camera.position={(float)worldSize/2.0f,12.0f,(float)worldSize/2.0f+18};
-        yaw=-PI/2.0f; pitch=-0.38f;
+        float sx=worldSize/2.0f;
+        float sz=std::min(worldSize/2.0f+8.0f,worldSize-2.0f);
+        int gx=Clamp((int)std::lround(sx),0,worldSize-1), gz=Clamp((int)std::lround(sz),0,worldSize-1);
+        float floorY=(groundHeights.empty()?4.0f:(float)groundHeights[gx*worldSize+gz])+1.15f;
+        camera.position={sx,floorY,sz};
+        yaw=-PI/2.0f; pitch=-0.22f;
         Vector3 look={cosf(yaw)*cosf(pitch),sinf(pitch),sinf(yaw)*cosf(pitch)};
         camera.target=Vector3Add(camera.position,look);
         velocity={0,0,0}; onGround=false;
     };
     auto startWorld = [&]() {
         GenerateWorld(blocks,worldSize,worldType,seed);
+        RebuildHeightMap(blocks,worldSize,groundHeights);
         resetCamera();
         screen=PLAYING;
         commandOpen=false;
@@ -167,10 +212,15 @@ int main() {
                 if(IsKeyDown(KEY_A)) move=Vector3Subtract(move,right);
                 if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
                 camera.position=Vector3Add(camera.position,move);
+                camera.position.x=Clamp(camera.position.x,0.0f,(float)worldSize-1.0f);
+                camera.position.z=Clamp(camera.position.z,0.0f,(float)worldSize-1.0f);
                 if(IsKeyPressed(KEY_SPACE) && onGround) { velocity.y=7.0f; onGround=false; }
                 velocity.y-=18.0f*dt;
                 camera.position.y+=velocity.y*dt;
-                if(camera.position.y<2.0f) { camera.position.y=2.0f; velocity.y=0; onGround=true; }
+                int gx=Clamp((int)std::lround(camera.position.x),0,worldSize-1);
+                int gz=Clamp((int)std::lround(camera.position.z),0,worldSize-1);
+                float floorY=(groundHeights.empty()?1.15f:(float)groundHeights[gx*worldSize+gz]+1.15f);
+                if(camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
                 camera.target=Vector3Add(camera.position,look);
 
                 if(IsKeyPressed(KEY_ONE)) selected=0;
@@ -190,12 +240,12 @@ int main() {
                         RayCollision c=GetRayCollisionBox(ray,box);
                         if(c.hit && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
                     }
-                    if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) blocks.erase(blocks.begin()+hit);
+                    if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { blocks.erase(blocks.begin()+hit); RebuildHeightMap(blocks,worldSize,groundHeights); }
                     else if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
-                        if(!occupied && p.y>=0 && Vector3Distance(p,camera.position)>1.4f) blocks.push_back({p,palette[selected]});
+                        if(!occupied && p.y>=0 && p.y<63 && Vector3Distance(p,camera.position)>1.4f) { blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); }
                     }
                 }
             }
@@ -218,7 +268,7 @@ int main() {
             BeginMode3D(camera);
             DrawSphere(night?Vector3{worldSize*.78f,24,worldSize*.18f}:Vector3{worldSize*.18f,27,worldSize*.22f},2.4f,night?Color{220,226,245,255}:Color{255,224,142,255});
             DrawPlane({worldSize/2.0f,-.55f,worldSize/2.0f},{(float)worldSize+4,(float)worldSize+4},night?Color{30,55,45,255}:Color{70,130,75,255});
-            for(const auto& b:blocks) DrawCube(b.p,1,1,1,b.c);
+            DrawWorldFast(blocks,worldSize);
             EndMode3D();
 
             DrawRectangleRounded({14,14,250,78},.12f,8,Fade(Color{8,14,26,255},.84f));
