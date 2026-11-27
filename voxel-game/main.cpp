@@ -237,7 +237,12 @@ int main() {
                 camera.position.y+=velocity.y*dt;
                 int gx=Clamp((int)std::lround(camera.position.x),0,worldSize-1);
                 int gz=Clamp((int)std::lround(camera.position.z),0,worldSize-1);
-                float floorY=(groundHeights.empty()?1.65f:(float)groundHeights[gx*worldSize+gz]+1.65f);
+                int safeHeight=groundHeights.empty()?0:groundHeights[gx*worldSize+gz];
+                for(int ox=-1;ox<=1;++ox) for(int oz=-1;oz<=1;++oz) {
+                    int sx=Clamp(gx+ox,0,worldSize-1), sz=Clamp(gz+oz,0,worldSize-1);
+                    if(!groundHeights.empty()) safeHeight=std::max(safeHeight,groundHeights[sx*worldSize+sz]);
+                }
+                float floorY=(float)safeHeight+1.65f;
                 if(camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
                 if(camera.position.y<1.65f) { camera.position.y=1.65f; velocity.y=0; onGround=true; }
                 camera.target=Vector3Add(camera.position,look);
@@ -358,8 +363,8 @@ int main() {
                     if(menuFPS==60) menuFPS=120; else if(menuFPS==120) menuFPS=144; else if(menuFPS==144) menuFPS=0; else menuFPS=60;
                     SetTargetFPS(menuFPS<=0?0:menuFPS);
                 }
-                DrawText("LOW: 960x540  |  NORMAL: 1280x720  |  HIGH: 1600x900",(int)cx-250,435,14,LIGHTGRAY);
-                if(button({cx-155,445,310,54},"BACK")) screen=settingsReturn;
+                DrawText("LOW: 960x540  |  NORMAL: 1280x720  |  HIGH: 1600x900",(int)cx-250,420,14,LIGHTGRAY);
+                if(button({cx-155,470,310,50},"BACK")) screen=settingsReturn;
             }
         }
         EndDrawing();
