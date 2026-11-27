@@ -211,7 +211,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .install-app-btn[hidden]{display:none}
 .install-app-btn:hover{box-shadow:0 0 18px #2684ff35}
 @media(max-width:600px){.install-app-btn{padding:8px 10px;font-size:12px}.install-app-btn span{display:none}}
-</style></head>
+</style><link rel="stylesheet" href="./social.css"></head>
 <body>
 <header class="top"><div class="brand">snip<span>z</span></div><label class="search-wrap" aria-label="Snipz durchsuchen"><span aria-hidden="true">⌕</span><input id="search" class="search" type="search" autocomplete="off" placeholder="Videos & Creator suchen …"><button id="clearSearchTop" type="button" aria-label="Suche leeren" hidden>×</button></label><button class="btn" id="authBtn">Anmelden</button><button class="btn install-app-btn" id="installAppBtn" type="button" hidden>↓ <span>App installieren</span></button><button class="help-btn" id="helpBtn" aria-label="Snipz Tutorial öffnen" title="Tutorial">?</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
 <div id="offlineBanner" class="offline-banner" role="status" aria-live="polite" hidden><span class="offline-dot"></span><span><b>Du bist offline</b><small>Die Verbindung fehlt. Neue Inhalte und Aktionen brauchen Internet.</small></span><span class="offline-pill">OFFLINE</span></div>
@@ -342,4 +342,4 @@ $('tutorialSkip').onclick=closeTutorial;
 $('tutorialBack').onclick=()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}};
 $('tutorialNext').onclick=()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()};
 $('tutorialModal').addEventListener('click',e=>{if(e.target===$('tutorialModal'))closeTutorial()});
-</script></body></html>
+</script><script type="module" src="./social.js"></script></body></html>
