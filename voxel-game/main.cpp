@@ -59,7 +59,7 @@ static Texture2D CreateBlockAtlas() {
         {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255},
         {112,76,45,255},{232,91,137,255}
     };
-    for(int type=0;type<11;type++) {
+    for(int type=0;type<12;type++) {
         int ox=(type%6)*32, oy=(type/6)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             int gx=x/4, gy=y/4;
@@ -373,7 +373,7 @@ int main() {
         else if (s.rfind("/give ",0)==0) {
             int v=atoi(s.substr(6).c_str());
             if (v>=1 && v<=paletteCount) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
-            else message="Usage: /give 1-11";
+            else message="Usage: /give 1-12";
         } else message="Unknown command. Type /help.";
         command[0]='\0'; commandOpen=false; messageTime=4.0f;
     };
