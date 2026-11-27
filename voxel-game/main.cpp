@@ -36,21 +36,25 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
     }
 }
 
-static void DrawWorldFast(const std::vector<Block>& blocks, int size) {
+static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     constexpr int MAX_Y=64;
     std::vector<unsigned char> solid(size*size*MAX_Y,0);
     auto index=[&](int x,int y,int z){ return (y*size+z)*size+x; };
-    for (const auto& b:blocks) {
-        int x=(int)std::lround(b.p.x), y=(int)std::lround(b.p.y), z=(int)std::lround(b.p.z);
+    for(const auto& block:blocks) {
+        int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
         if(x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y) solid[index(x,y,z)]=1;
     }
     auto has=[&](int x,int y,int z){ return x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y&&solid[index(x,y,z)]!=0; };
-    auto face=[](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color) {
-        rlColor4ub(color.r,color.g,color.b,color.a); rlNormal3f(n.x,n.y,n.z);
-        rlVertex3f(a.x,a.y,a.z); rlVertex3f(b.x,b.y,b.z); rlVertex3f(c.x,c.y,c.z);
-        rlVertex3f(a.x,a.y,a.z); rlVertex3f(c.x,c.y,c.z); rlVertex3f(d.x,d.y,d.z);
+    std::vector<float> vertices, normals;
+    std::vector<unsigned char> colors;
+    auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color) {
+        Vector3 p[6]={a,b,c,a,c,d};
+        for(const auto& v:p) {
+            vertices.push_back(v.x); vertices.push_back(v.y); vertices.push_back(v.z);
+            normals.push_back(n.x); normals.push_back(n.y); normals.push_back(n.z);
+            colors.push_back(color.r); colors.push_back(color.g); colors.push_back(color.b); colors.push_back(color.a);
+        }
     };
-    rlBegin(RL_TRIANGLES);
     for(const auto& block:blocks) {
         int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
         if(x<0||x>=size||z<0||z>=size||y<0||y>=MAX_Y) continue;
@@ -63,7 +67,18 @@ static void DrawWorldFast(const std::vector<Block>& blocks, int size) {
         if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},col);
         if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},col);
     }
-    rlEnd();
+    Mesh mesh={};
+    mesh.vertexCount=(int)(vertices.size()/3);
+    mesh.triangleCount=mesh.vertexCount/3;
+    if(mesh.vertexCount==0) return {};
+    mesh.vertices=(float*)MemAlloc(vertices.size()*sizeof(float));
+    mesh.normals=(float*)MemAlloc(normals.size()*sizeof(float));
+    mesh.colors=(unsigned char*)MemAlloc(colors.size());
+    std::memcpy(mesh.vertices,vertices.data(),vertices.size()*sizeof(float));
+    std::memcpy(mesh.normals,normals.data(),normals.size()*sizeof(float));
+    std::memcpy(mesh.colors,colors.data(),colors.size());
+    UploadMesh(&mesh,false);
+    return LoadModelFromMesh(mesh);
 }
 
 static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int seed) {
@@ -99,7 +114,7 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
 }
 
 int main() {
-    int W=1280, H=720, fpsLimit=120, fullscreen=0;
+    int W=1280, H=720, fpsLimit=120, fullscreen=0, graphicsQuality=1;
     {
         std::ifstream cfg("settings.ini");
         std::string line;
@@ -108,13 +123,13 @@ int main() {
             if(sscanf(line.c_str(),"width=%d",&value)==1) W=std::max(800,std::min(2560,value));
             else if(sscanf(line.c_str(),"height=%d",&value)==1) H=std::max(600,std::min(1600,value));
             else if(sscanf(line.c_str(),"fps=%d",&value)==1) fpsLimit=value;
-            else if(sscanf(line.c_str(),"fullscreen=%d",&value)==1) fullscreen=value;
+            else if(sscanf(line.c_str(),"fullscreen=%d",&value)==1) fullscreen=value;\n            else if(sscanf(line.c_str(),"graphics=%d",&value)==1) graphicsQuality=Clamp(value,0,2);
         }
     }
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | (fullscreen?FLAG_FULLSCREEN_MODE:0));
     InitWindow(W,H,"BLOCKLANDS");
     if (!IsWindowReady()) return 1;
-    SetTargetFPS(fpsLimit<=0?0:fpsLimit);
+    SetTargetFPS(fpsLimit<=0?0:fpsLimit);\n    if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }\n    else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
 
     enum Screen { MAIN_MENU, PLAYING, PAUSED, WORLD_MENU, SETTINGS };
     Screen screen = MAIN_MENU;
@@ -140,7 +155,7 @@ int main() {
         float sx=worldSize/2.0f;
         float sz=std::min(worldSize/2.0f+8.0f,worldSize-2.0f);
         int gx=Clamp((int)std::lround(sx),0,worldSize-1), gz=Clamp((int)std::lround(sz),0,worldSize-1);
-        float floorY=(groundHeights.empty()?4.0f:(float)groundHeights[gx*worldSize+gz])+1.15f;
+        float floorY=(groundHeights.empty()?4.0f:(float)groundHeights[gx*worldSize+gz])+1.65f;
         camera.position={sx,floorY,sz};
         yaw=-PI/2.0f; pitch=-0.22f;
         Vector3 look={cosf(yaw)*cosf(pitch),sinf(pitch),sinf(yaw)*cosf(pitch)};
@@ -219,8 +234,8 @@ int main() {
                 camera.position.y+=velocity.y*dt;
                 int gx=Clamp((int)std::lround(camera.position.x),0,worldSize-1);
                 int gz=Clamp((int)std::lround(camera.position.z),0,worldSize-1);
-                float floorY=(groundHeights.empty()?1.15f:(float)groundHeights[gx*worldSize+gz]+1.15f);
-                if(camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
+                float floorY=(groundHeights.empty()?1.65f:(float)groundHeights[gx*worldSize+gz]+1.65f);
+                if(camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }\n                if(camera.position.y<1.65f) { camera.position.y=1.65f; velocity.y=0; onGround=true; }
                 camera.target=Vector3Add(camera.position,look);
 
                 if(IsKeyPressed(KEY_ONE)) selected=0;
@@ -240,12 +255,12 @@ int main() {
                         RayCollision c=GetRayCollisionBox(ray,box);
                         if(c.hit && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
                     }
-                    if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { blocks.erase(blocks.begin()+hit); RebuildHeightMap(blocks,worldSize,groundHeights); }
+                    if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { blocks.erase(blocks.begin()+hit); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     else if(hit>=0 && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
-                        if(!occupied && p.y>=0 && p.y<63 && Vector3Distance(p,camera.position)>1.4f) { blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); }
+                        if(!occupied && p.y>=0 && p.y<63 && Vector3Distance(p,camera.position)>1.4f) { blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     }
                 }
             }
@@ -268,7 +283,7 @@ int main() {
             BeginMode3D(camera);
             DrawSphere(night?Vector3{worldSize*.78f,24,worldSize*.18f}:Vector3{worldSize*.18f,27,worldSize*.22f},2.4f,night?Color{220,226,245,255}:Color{255,224,142,255});
             DrawPlane({worldSize/2.0f,-.55f,worldSize/2.0f},{(float)worldSize+4,(float)worldSize+4},night?Color{30,55,45,255}:Color{70,130,75,255});
-            DrawWorldFast(blocks,worldSize);
+            if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
             EndMode3D();
 
             DrawRectangleRounded({14,14,250,78},.12f,8,Fade(Color{8,14,26,255},.84f));
@@ -332,8 +347,8 @@ int main() {
                 if(button({cx-155,536,310,48},"BACK")) screen=(blocks.empty()?MAIN_MENU:PAUSED);
             } else if(screen==SETTINGS) {
                 DrawText("SETTINGS",(int)cx-100,130,32,WHITE);
-                DrawText(TextFormat("FPS LIMIT: %s",menuFPS<=0?"UNLIMITED":TextFormat("%d",menuFPS)),(int)cx-125,230,22,SKYBLUE);
-                if(button({cx-155,278,310,54},"CHANGE FPS LIMIT")) {
+                DrawText(TextFormat("GRAPHICS: %s",graphicsQuality==0?"LOW":(graphicsQuality==1?"NORMAL":"HIGH")),(int)cx-125,205,22,SKYBLUE);\n                if(button({cx-155,245,310,48},"CHANGE GRAPHICS")) { graphicsQuality=(graphicsQuality+1)%3; int nw=graphicsQuality==0?960:(graphicsQuality==1?1280:1600); int nh=graphicsQuality==0?540:(graphicsQuality==1?720:900); SetWindowSize(nw,nh); }\n                DrawText(TextFormat("FPS LIMIT: %s",menuFPS<=0?"UNLIMITED":TextFormat("%d",menuFPS)),(int)cx-125,320,22,SKYBLUE);
+                if(button({cx-155,365,310,48},"CHANGE FPS LIMIT")) {
                     if(menuFPS==60) menuFPS=120; else if(menuFPS==120) menuFPS=144; else if(menuFPS==144) menuFPS=0; else menuFPS=60;
                     SetTargetFPS(menuFPS<=0?0:menuFPS);
                 }
