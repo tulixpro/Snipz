@@ -142,7 +142,7 @@ int main() {
     Model worldModel={};
     bool worldModelReady=false;
     int worldSize=64, worldType=0, seed=2026, selected=0;
-    bool creative=true, night=false, commandOpen=false;
+    bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
     float messageTime=4.0f;
@@ -214,18 +214,26 @@ int main() {
         return (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) || gamepadActivate;
     };
     auto drawBackdrop = [&]() {
-        ClearBackground(Color{95,151,196,255});
         int sw=GetScreenWidth(), sh=GetScreenHeight();
-        DrawCircle(sw-180,125,58,Color{255,221,145,255});
-        DrawRectangle(0,sh/2,sw,sh/2,Color{103,158,91,255});
-        for(int i=0;i<9;i++) {
-            int hx=i*(sw/8)-70, hh=110+(int)(noise2(i,3,7)*145);
-            DrawTriangle({(float)hx,(float)sh/2},{(float)hx+170,(float)sh/2-hh},{(float)hx+340,(float)sh/2},Color{74,117,91,255});
-            DrawRectangle(hx,sh/2+hh/3,340,sh/2,Color{72,116,69,255});
+        ClearBackground(Color{105,166,211,255});
+        DrawCircle(sw-190,125,54,Color{255,226,155,255});
+        DrawRectangle(0,sh/2,sw,sh/2,Color{91,151,83,255});
+        // Layered blocky hills create a cleaner voxel-style panorama.
+        for(int i=0;i<8;i++) {
+            int hx=i*(sw/7)-100, hh=95+(int)(noise2(i,5,21)*125);
+            DrawRectangle(hx,sh/2-hh,sw/5+40,hh+sh/2, i%2?Color{76,128,85,255}:Color{84,139,91,255});
+            DrawRectangle(hx,sh/2-hh,sw/5+40,14,Color{125,174,105,255});
         }
-        DrawRectangle(0,sh-150,sw,150,Fade(Color{16,28,34,255},0.76f));
-        DrawText("BLOCKLANDS",48,34,18,Color{125,183,224,255});
-        DrawLine(48,64,GetScreenWidth()-48,64,Fade(WHITE,0.18f));
+        for(int i=0;i<7;i++) {
+            int tx=70+i*(sw/7), ty=sh/2-55-(int)(noise2(i,8,2)*45);
+            DrawRectangle(tx+12,ty+28,12,55,Color{105,75,48,255});
+            DrawRectangle(tx,ty,36,38,Color{47,111,59,255});
+            DrawRectangle(tx+7,ty-9,24,18,Color{63,133,67,255});
+        }
+        DrawRectangle(0,sh-132,sw,132,Fade(Color{12,22,32,255},.88f));
+        DrawText("BLOCKLANDS",48,30,36,WHITE);
+        DrawText("BUILD YOUR OWN WORLD",51,70,14,Color{206,224,237,255});
+        DrawLine(48,96,sw-48,96,Fade(WHITE,.28f));
     };
 
     while (!WindowShouldClose()) {
@@ -233,7 +241,20 @@ int main() {
         float dt=std::min(GetFrameTime(),0.05f);
         if (messageTime>0) messageTime-=dt;
 
-        if (screen==PLAYING && !commandOpen) {
+        if (screen==PLAYING && !commandOpen && !inventoryOpen) {
+            if(IsKeyPressed(KEY_E) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; EnableCursor(); }
+        }
+        if (screen==PLAYING && inventoryOpen) {
+            if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || (IsGamepadAvailable(0)&&IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
+            if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                float panelX=GetScreenWidth()/2.0f-270.0f, panelY=GetScreenHeight()/2.0f-190.0f;
+                for(int i=0;i<27;i++) {
+                    Rectangle slot={panelX+28+(i%9)*56.0f,panelY+72+(i/9)*56.0f,48,48};
+                    if(CheckCollisionPointRec(GetMousePosition(),slot) && i<paletteCount) { selected=i; }
+                }
+            }
+        }
+        if (screen==PLAYING && !commandOpen && !inventoryOpen) {
             if (IsKeyPressed(KEY_ESCAPE)) { screen=PAUSED; EnableCursor(); }
             if (IsKeyPressed(KEY_F2)) { screen=WORLD_MENU; EnableCursor(); }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
@@ -365,13 +386,15 @@ int main() {
             drawBackdrop();
             float cx=GetScreenWidth()/2.0f;
             if(screen==MAIN_MENU) {
-                DrawText("A WORLD BUILT BY YOU", (int)cx-205,118,25,Color{188,210,232,255});
-                DrawText("Explore. Build. Create.",(int)cx-160,153,19,LIGHTGRAY);
-                DrawText("PRESS A / ENTER TO SELECT",(int)cx-130,196,14,Fade(WHITE,.8f));
-                if(button({cx-155,230,310,58},"PLAY",true)) screen=WORLD_MENU;
-                if(button({cx-155,302,310,52},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
-                if(button({cx-155,368,310,52},"QUIT")) break;
-                DrawText("A small voxel sandbox prototype",(int)cx-145,GetScreenHeight()-54,14,Fade(WHITE,.55f));
+                DrawRectangleRounded({cx-205,112,410,390},.035f,12,Fade(Color{11,20,31,255},.78f));
+                DrawRectangleRoundedLines({cx-205,112,410,390},.035f,12,Fade(WHITE,.24f));
+                DrawText("WELCOME TO",(int)cx-83,137,16,Color{190,211,226,255});
+                DrawText("BLOCKLANDS",(int)cx-155,160,36,WHITE);
+                DrawText("Explore. Build. Create.",(int)cx-105,203,17,LIGHTGRAY);
+                if(button({cx-150,252,300,58},"PLAY",true)) screen=WORLD_MENU;
+                if(button({cx-150,324,300,52},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
+                if(button({cx-150,390,300,52},"QUIT")) break;
+                DrawText("WASD / CONTROLLER SUPPORTED",(int)cx-130,462,13,Fade(WHITE,.7f));
             } else if(screen==PAUSED) {
                 DrawText("PAUSED",(int)cx-85,126,34,WHITE);
                 if(button({cx-155,215,310,56},"RESUME",true)) { screen=PLAYING; DisableCursor(); }
