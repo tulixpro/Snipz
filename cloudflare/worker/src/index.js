@@ -1,9 +1,18 @@
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Referrer-Policy": "no-referrer",
   "X-Frame-Options": "DENY",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  "Cross-Origin-Resource-Policy": "same-site",
+  "Cross-Origin-Opener-Policy": "same-origin",
   "Cache-Control": "no-store",
+  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+  "Strict-Transport-Security": "max-age=31536000",
+  "X-DNS-Prefetch-Control": "off",
+  "X-Permitted-Cross-Domain-Policies": "none",
+  "X-Robots-Tag": "noindex, nofollow",
+  "Origin-Agent-Cluster": "?1",
+  "Pragma": "no-cache",
 };
 
 function json(data, status, origin) {
@@ -17,16 +26,32 @@ function json(data, status, origin) {
   });
 }
 
+function validConfiguredOrigin(value) {
+  if (!value || value.includes("YOUR-") || value.includes("REPLACE")) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" && parsed.origin === value;
+  } catch {
+    return false;
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const configuredOrigin = env.ALLOWED_ORIGIN;
     const requestOrigin = request.headers.get("Origin");
 
-    if (requestOrigin && (!configuredOrigin || requestOrigin !== configuredOrigin)) {
+    // Fail closed until a real HTTPS frontend origin has been configured.
+    if (!validConfiguredOrigin(configuredOrigin)) {
+      return json({ error: "API is not configured" }, 503);
+    }
+
+    // Reject browser requests from every origin except the one configured.
+    if (requestOrigin && requestOrigin !== configuredOrigin) {
       return json({ error: "Origin not allowed" }, 403);
     }
-    const corsOrigin = requestOrigin && requestOrigin === configuredOrigin ? configuredOrigin : null;
+    const corsOrigin = requestOrigin ? configuredOrigin : null;
 
     if (request.method === "OPTIONS") {
       if (!corsOrigin) return json({ error: "Origin not allowed" }, 403);
@@ -37,25 +62,29 @@ export default {
           "Access-Control-Allow-Origin": corsOrigin,
           "Access-Control-Allow-Methods": "GET, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          "Access-Control-Max-Age": "600",
+          "Access-Control-Max-Age": "300",
           "Vary": "Origin",
         },
       });
     }
 
-    if (url.pathname === "/api/health" && request.method === "GET") {
+    // No write routes are exposed until authentication, authorization,
+    // validation, abuse controls and moderation are implemented and tested.
+    if (request.method !== "GET") {
+      return json({ error: "Method not allowed" }, 405, corsOrigin);
+    }
+
+    if (url.pathname === "/api/health") {
       try {
+        if (!env.DB) throw new Error("D1 binding missing");
         await env.DB.prepare("SELECT 1 AS ok").first();
-        return json({
-          ok: true,
-          service: "snipz-api",
-          database: "connected",
-          videoStorage: Boolean(env.VIDEOS),
-        }, 200, corsOrigin);
+        return json({ ok: true, service: "snipz-api", status: "healthy" }, 200, corsOrigin);
       } catch {
+        // Do not leak database names, bindings, stack traces or configuration.
         return json({ ok: false, error: "Service unavailable" }, 503, corsOrigin);
       }
     }
+
     return json({ error: "Not found" }, 404, corsOrigin);
   },
 };

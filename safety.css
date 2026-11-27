@@ -1,0 +1,19 @@
+/* Snipz Safety Center — accessible demo styles */
+.safety-card{padding:18px}
+.safety-kicker{font-size:11px;letter-spacing:.14em;font-weight:850;color:#7fc4ff;margin-bottom:5px}
+.safety-card>p,.safety-panel p{color:#a8bad2;font-size:13px;line-height:1.6}
+.safety-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:16px 0}
+.safety-panel{min-width:0;padding:14px;border:1px solid #34516f88;border-radius:14px;background:#0b1728}
+.safety-panel h4{margin:0 0 8px;font-size:14px}
+.safety-people{margin-top:12px}
+.safety-person{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #ffffff12}
+.safety-person:last-child{border-bottom:0}
+.safety-report{display:grid;gap:8px}
+.safety-report label{font-size:12px;color:#c5d8ed;font-weight:700;margin-top:5px}
+.safety-report select,.safety-report textarea{width:100%;min-width:0;background:#101f33;border:1px solid #34516f;border-radius:10px;padding:10px;color:#eef6ff;font:inherit}
+.safety-report textarea{resize:vertical}
+.safety-hint{font-size:11px!important}
+.safety-wide{margin-top:12px}
+.safety-wide ul{padding-left:20px;color:#c5d8ed;font-size:13px;line-height:1.8}
+.safety-status{padding:12px 14px;border:1px solid #806c3b;border-radius:12px;background:#2a2417;color:#ffe8b5;font-size:12px;line-height:1.6}
+@media(max-width:700px){.safety-grid{grid-template-columns:1fr}.safety-card{margin-left:9px;margin-right:9px}}

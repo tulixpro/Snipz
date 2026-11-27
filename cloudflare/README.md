@@ -36,6 +36,10 @@ A green health check is not proof that the social app backend is production-read
 Cloudflare account access and deployment approval are required. Never paste account passwords,
 API tokens, database credentials or private keys into chat or GitHub.
 
+## Security verification
+
+See [SECURITY-TEST-PLAN.md](./SECURITY-TEST-PLAN.md) for negative tests that must pass in a non-production environment. The plan is not a substitute for automated tests or an independent review.
+
 ## Security work required before public launch
 
 - Use a maintained identity provider and verify every access token server-side on every protected route.

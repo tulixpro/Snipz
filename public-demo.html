@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#081426">
+  <meta name="description" content="Snipz – eine interaktive Design-Vorschau für eine Social-App.">
+  <title>Snipz – Öffentliche Vorschau</title>
+  <style>
+    :root{color-scheme:dark;--bg:#081426;--panel:#10213a;--line:#28496f;--blue:#278cff;--cyan:#62c7ff;--muted:#a9bdd7}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -10%,#174477 0,#0a1930 42%,var(--bg) 78%);color:#f4f8ff;font:15px/1.5 system-ui,Arial,sans-serif}
+    button{font:inherit;cursor:pointer;color:inherit}.top{height:68px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 max(18px,calc((100vw - 1060px)/2));border-bottom:1px solid #8bcaff25;background:#09172aeF;position:sticky;top:0;backdrop-filter:blur(14px);z-index:5}
+    .logo{font-size:29px;font-weight:950;letter-spacing:-1.5px;background:linear-gradient(100deg,#fff,#7fcaff,#278cff);color:transparent;background-clip:text}
+    .pill{border:1px solid #5baeff66;background:#15365a;border-radius:30px;padding:7px 12px;color:#cce8ff;font-size:12px;font-weight:800}
+    main{max-width:1060px;margin:auto;padding:34px 18px 70px}.hero{text-align:center;padding:35px 12px 30px}.eyebrow{color:#7dc7ff;font-size:12px;font-weight:900;letter-spacing:3px}.hero h1{font-size:clamp(38px,7vw,68px);line-height:1.02;letter-spacing:-2px;margin:12px 0}.hero p{color:var(--muted);max-width:610px;margin:0 auto 20px;font-size:17px}
+    .hero-mark{display:inline-block;background:linear-gradient(110deg,#1678ed,#56c2ff);padding:11px 20px;border-radius:28px;font-weight:900;box-shadow:0 8px 30px #1678ed55}
+    .notice{max-width:800px;margin:0 auto 26px;padding:13px 16px;border:1px solid #4976a6;background:#102744;border-radius:14px;color:#d9ecff;font-size:13px}
+    .section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:28px 0 13px}.section-title h2{margin:0;font-size:21px}.muted{color:var(--muted);font-size:12px}
+    .stories{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.story{min-height:220px;border:1px solid #ffffff20;border-radius:19px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;overflow:hidden;position:relative;background:linear-gradient(145deg,#244f78,#182443 55%,#5a3d79);transition:transform .2s,border-color .2s}.story:nth-child(2){background:linear-gradient(145deg,#e58e78,#704c80 55%,#182b4c)}.story:nth-child(3){background:linear-gradient(145deg,#327d91,#29376f 60%,#171d39)}.story:nth-child(4){background:linear-gradient(145deg,#7458b4,#252b5d 55%,#101b36)}.story:hover{transform:translateY(-3px);border-color:#85caff}.story:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#07101ddd,transparent 70%)}.story>*{position:relative}.story-top{display:flex;align-items:center;gap:9px;font-weight:800}.avatar{width:37px;height:37px;border-radius:50%;display:grid;place-items:center;background:#ffffff25;border:2px solid #ffffffaa}.story strong{font-size:22px;line-height:1.1}.story small{color:#e1eaff}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}.card{background:linear-gradient(150deg,#122844,#0e1b30);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 14px 36px #0003}.card h3{margin:0 0 8px}.card p{color:var(--muted);margin:0}.mock-chat{display:grid;gap:9px;margin-top:16px}.bubble{max-width:86%;padding:10px 13px;background:#1a3556;border-radius:15px;color:#eaf5ff;font-size:13px}.bubble.right{justify-self:end;background:#176bc4}.feature-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}.feature{padding:12px;border:1px solid #ffffff17;background:#0d1d32;border-radius:13px}.feature b{display:block}.feature span{font-size:12px;color:var(--muted)}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.tab{border:1px solid #31577f;background:#112945;border-radius:24px;padding:9px 14px}.tab[aria-pressed=true]{background:#176bc4;border-color:#70bfff}.demo-panel{min-height:120px}.footer{border-top:1px solid #8bcaff20;margin-top:32px;padding-top:18px;color:#91a9c7;font-size:12px;text-align:center}
+    .modal{position:fixed;inset:0;background:#020916ed;z-index:10;display:none;place-items:center;padding:18px}.modal.open{display:grid}.modal-inner{width:min(440px,100%);min-height:500px;border:1px solid #77bfff66;border-radius:24px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(145deg,#23558a,#172044 65%,#4b3470);box-shadow:0 20px 80px #0009}.modal button{align-self:flex-end;background:#ffffff22;border:1px solid #ffffff55;border-radius:24px;padding:8px 14px}.modal h2{font-size:35px;line-height:1.05}.modal p{color:#e1ecff}
+    @media(max-width:700px){.stories{grid-template-columns:repeat(2,1fr)}.story{min-height:190px}.grid{grid-template-columns:1fr}.hero{padding-top:22px}.top{padding:0 14px}.feature-list{grid-template-columns:1fr 1fr}}
+    @media(max-width:390px){.stories{gap:8px}.story{padding:11px;min-height:175px}.feature-list{grid-template-columns:1fr}}
+  
+    /* Desktop layout upgrade: wider canvas and balanced three-column composition */
+    @media(min-width:1000px){
+      main{max-width:1320px;padding:38px 30px 84px}
+      .hero{padding:48px 20px 38px}
+      .hero p{max-width:720px;font-size:18px}
+      .stories{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+      .story{min-height:270px;padding:18px;border-radius:22px}
+      .story strong{font-size:25px}
+      .section-title{margin:38px 0 16px}
+      .section-title h2{font-size:24px}
+      .grid{grid-template-columns:minmax(0,1.08fr) minmax(340px,.92fr);gap:20px}
+      .card{padding:24px;border-radius:22px}
+      .mock-chat{gap:12px;margin-top:22px}
+      .bubble{font-size:14px;padding:12px 16px}
+      .feature-list{gap:13px;margin-top:22px}
+      .feature{padding:16px;border-radius:15px}
+      .demo-panel{padding:24px}
+      .footer{margin-top:48px;padding-top:24px}
+    }
+    @media(min-width:1450px){
+      main{max-width:1440px}
+      .hero h1{font-size:76px}
+      .stories{gap:22px}
+      .story{min-height:300px}
+    }
+    @media(min-width:701px) and (max-width:999px){
+      main{max-width:900px;padding:28px 22px 60px}
+      .story{min-height:230px}
+      .grid{gap:12px}
+    }
+    @media(max-width:700px){
+      main{padding-top:20px}
+      .hero h1{letter-spacing:-1.3px}
+      .story{min-height:175px}
+    }
+    @media(hover:hover){
+      .story{cursor:pointer}
+      .story:hover{box-shadow:0 16px 38px #0005,0 0 22px #55b5ff22}
+      .tab:hover{background:#1b4168}
+    }
+
+  </style>
+</head>
+<body>
+  <header class="top"><div class="logo">snipz</div><span class="pill">ÖFFENTLICHE DESIGN-VORSCHAU</span></header>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">DEIN MOMENT. DEIN SNIPZ.</div>
+      <h1>Willkommen bei <span style="color:#67bdff">Snipz</span></h1>
+      <p>Eine Vorschau auf eine neue Social-App-Idee – mit Stories, Chats und einem klaren, blauen Look.</p>
+      <span class="hero-mark">✨ Snipz Preview</span>
+    </section>
+    <div class="notice"><b>Wichtig:</b> Dies ist nur eine interaktive Design-Demo. Es gibt keine echten Konten, keine echten Nachrichten und keine Uploads. Alle Namen und Inhalte sind erfunden. Die Kamera wird von dieser Vorschau nicht eingeschaltet.</div>
+    <div class="section-title"><h2>Stories entdecken</h2><span class="muted">Beispiel-Inhalte</span></div>
+    <section class="stories" aria-label="Beispiel-Stories">
+      <button class="story" data-story="Café-Pause ☕|Ein kleiner Moment in der Sonne."><span class="story-top"><span class="avatar">M</span>Mila · Demo</span><strong>Café-Pause ☕</strong><small>Tippen zum Anschauen</small></button>
+      <button class="story" data-story="Abendhimmel 🌇|Die Farben des Himmels heute."><span class="story-top"><span class="avatar">N</span>Noah · Demo</span><strong>Abendhimmel 🌇</strong><small>Tippen zum Anschauen</small></button>
+      <button class="story" data-story="Kreativzeit 🎨|Ein bisschen Farbe für den Tag."><span class="story-top"><span class="avatar">L</span>Lea · Demo</span><strong>Kreativzeit 🎨</strong><small>Tippen zum Anschauen</small></button>
+      <button class="story" data-story="Musik an 🎧|Gute Laune für heute."><span class="story-top"><span class="avatar">E</span>Emil · Demo</span><strong>Musik an 🎧</strong><small>Tippen zum Anschauen</small></button>
+    </section>
+    <div class="section-title"><h2>So könnte Snipz aussehen</h2><span class="muted">Nur Beispieldaten</span></div>
+    <section class="grid">
+      <article class="card"><h3>💬 Chat-Vorschau</h3><p>Ein Beispiel, wie Unterhaltungen gestaltet sein könnten.</p><div class="mock-chat"><div class="bubble">Hey! Wie war dein Tag? 👋</div><div class="bubble right">Richtig gut! Und deiner?</div><div class="bubble">Auch super, danke! ✨</div></div></article>
+      <article class="card"><h3>📸 Kamera & Kreativität</h3><p>Ein späteres Studio könnte Filter, Sticker und Textideen enthalten.</p><div class="feature-list"><div class="feature"><b>🌈 Filter</b><span>Look auswählen</span></div><div class="feature"><b>✨ Sticker</b><span>Momente verzieren</span></div><div class="feature"><b>🔤 Text</b><span>Eigene Caption</span></div><div class="feature"><b>📖 Stories</b><span>Momente teilen</span></div></div></article>
+    </section>
+    <div class="section-title"><h2>Snipz-Bereiche</h2><span class="muted">Vorschau anklicken</span></div>
+    <section class="card demo-panel">
+      <div class="tabs" role="group" aria-label="Demo-Bereiche"><button class="tab" data-panel="stories" aria-pressed="true">Stories</button><button class="tab" data-panel="chat" aria-pressed="false">Chats</button><button class="tab" data-panel="safety" aria-pressed="false">Sicherheit</button></div>
+      <div id="panelText"><h3>📖 Stories</h3><p>Beispiel-Stories zeigen, wie Snipz-Momente dargestellt werden könnten. Sie werden nicht von echten Personen hochgeladen.</p></div>
+    </section>
+    <footer class="footer">Snipz ist ein unabhängiges Projekt in Entwicklung. Diese Seite ist eine Vorschau und kein fertiger Social-Media-Dienst.</footer>
+  </main>
+  <div class="modal" id="storyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-inner"><button id="closeStory">Schließen ✕</button><div><div class="eyebrow">SNIPZ STORY · DEMO</div><h2 id="modalTitle">Ein Moment ✨</h2><p id="modalCopy"></p></div><span class="pill">Nur Beispieldaten</span></div></div>
+  <script>
+    const modal=document.getElementById('storyModal');
+    document.querySelectorAll('[data-story]').forEach(button=>button.addEventListener('click',()=>{
+      const [title,copy]=button.dataset.story.split('|');
+      document.getElementById('modalTitle').textContent=title;
+      document.getElementById('modalCopy').textContent=copy;
+      modal.classList.add('open');
+      document.getElementById('closeStory').focus();
+    }));
+    function closeModal(){modal.classList.remove('open')}
+    document.getElementById('closeStory').addEventListener('click',closeModal);
+    modal.addEventListener('click',event=>{if(event.target===modal)closeModal()});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal()});
+    const panels={
+      stories:['📖 Stories','Beispiel-Stories zeigen, wie Snipz-Momente dargestellt werden könnten. Sie werden nicht von echten Personen hochgeladen.'],
+      chat:['💬 Chats','Hier siehst du nur vorbereitete Beispiel-Nachrichten. Es wird nichts gesendet oder gespeichert.'],
+      safety:['🛡️ Sicherheit','Vor echten Konten wären unter anderem Datenschutz, Meldefunktionen, Blockieren, Moderation und sichere Medienverwaltung nötig. Diese Vorschau stellt keine echten Schutzfunktionen bereit.']
+    };
+    document.querySelectorAll('[data-panel]').forEach(button=>button.addEventListener('click',()=>{
+      document.querySelectorAll('[data-panel]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+      const [title,copy]=panels[button.dataset.panel];
+      document.getElementById('panelText').innerHTML='<h3></h3><p></p>';
+      document.querySelector('#panelText h3').textContent=title;
+      document.querySelector('#panelText p').textContent=copy;
+    }));
+  </script>
+</body>
+</html>
