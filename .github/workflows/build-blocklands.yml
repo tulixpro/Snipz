@@ -42,4 +42,4 @@ jobs:
           name: Blocklands-Windows-x64
           path: dist/
 
-# Rebuild trigger: textured terrain and falling physics
+# Rebuild trigger: autosave and cleaner main menu
