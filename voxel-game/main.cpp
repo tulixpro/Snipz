@@ -78,7 +78,8 @@ int main() {
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
 
     enum Screen { MAIN_MENU, PLAYING, PAUSED, WORLD_MENU, SETTINGS };
-    Screen screen = MAIN_MENU;\n    Screen settingsReturn = MAIN_MENU;
+    Screen screen = MAIN_MENU;
+    Screen settingsReturn = MAIN_MENU;
     std::vector<Block> blocks;
     int worldSize=64, worldType=0, seed=2026, selected=0;
     bool creative=true, night=false, commandOpen=false;
@@ -246,7 +247,7 @@ int main() {
             }
             if(commandOpen) {
                 DrawRectangle(0,0,GetScreenWidth(),GetScreenHeight(),Fade(BLACK,.45f));
-                DrawRectangleRounded({90,GetScreenHeight()-125,(float)GetScreenWidth()-180,90},.12f,8,Color{20,29,45,248});
+                DrawRectangleRounded({90.0f,(float)GetScreenHeight()-125.0f,(float)GetScreenWidth()-180.0f,90.0f},.12f,8,Color{20,29,45,248});
                 DrawText("COMMAND  (ENTER TO RUN, ESC TO CLOSE)",112,GetScreenHeight()-112,14,SKYBLUE);
                 DrawText(TextFormat(">%s_",command),112,GetScreenHeight()-80,24,WHITE);
             }
@@ -267,7 +268,8 @@ int main() {
                 if(button({cx-155,347,310,52},"SETTINGS")) { settingsReturn=PAUSED; screen=SETTINGS; }
                 if(button({cx-155,411,310,52},"MAIN MENU")) { screen=MAIN_MENU; EnableCursor(); }
             } else if(screen==WORLD_MENU) {
-                DrawText("PLAY  /  WORLD SELECT",(int)cx-205,100,30,WHITE);\n                DrawText("Build a custom world or let Blocklands surprise you.",(int)cx-225,137,16,LIGHTGRAY);
+                DrawText("PLAY  /  WORLD SELECT",(int)cx-205,100,30,WHITE);
+                DrawText("Build a custom world or let Blocklands surprise you.",(int)cx-225,137,16,LIGHTGRAY);
                 DrawText(TextFormat("WORLD TYPE:  %s",worldNames[worldType]),(int)cx-155,175,20,SKYBLUE);
                 if(button({cx-220,212,64,48},"<")) worldType=(worldType+3)%4;
                 if(button({cx+156,212,64,48},">")) worldType=(worldType+1)%4;
