@@ -93,7 +93,7 @@
     const chat=e.target.closest('[data-chat], [data-select-chat]');if(chat){selectedChat=chat.dataset.chat||chat.dataset.selectChat;showSocial('chats');return}
     const filter=e.target.closest('[data-filter]');if(filter){currentFilter=filter.dataset.filter;applyFilter();return}
     const snap=e.target.closest('[data-open-snap]');if(snap){const name=demoFriends.find(x=>x.id===snap.dataset.openSnap)?.name||'Freund';const w=window.open('','_blank','width=420,height=640');if(w){w.document.write('<title>Demo-Snap</title><body style="margin:0;background:#091525;color:white;font:700 28px system-ui;display:grid;place-items:center;text-align:center">⚡<br>'+escapeHtml(name)+'s Demo-Snap<br><small style="font-size:14px">Nur eine Vorschau</small></body>');w.document.close()}else alert(name+'s Demo-Snap · Nur eine Vorschau');return}
-    if(e.target.id==='snipzStartCamera'){try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});const v=$('snipzCameraVideo');v.srcObject=cameraStream;$('snipzCameraPlaceholder').style.display='none';}catch(err){alert('Kamera konnte nicht gestartet werden. Prüfe die Browser-Berechtigung.');}return}
+    if(e.target.id==='snipzStartCamera'){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){alert('Die Kamera benötigt einen sicheren HTTPS-Aufruf und einen unterstützten Browser.');return}if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null}try{const requestedStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});if(activeTab!=='camera'||!view.isConnected||!$('snipzCameraVideo')){requestedStream.getTracks().forEach(t=>t.stop());return}cameraStream=requestedStream;const v=$('snipzCameraVideo');v.srcObject=requestedStream;const placeholder=$('snipzCameraPlaceholder');if(placeholder)placeholder.style.display='none';await v.play().catch(()=>{});}catch(err){alert('Kamera konnte nicht gestartet werden. Prüfe die Browser-Berechtigung.');}return}
     if(e.target.id==='snipzSnapSend'){const f=$('snipzSnapFile').files[0];if(!f){alert('Wähle zuerst ein Foto oder Video aus.');return}alert('Dein Snap ist lokal vorbereitet. Das Versenden wird mit dem späteren Server aktiviert.');}
   });
   document.addEventListener('submit',e=>{
@@ -104,5 +104,5 @@
   const homeMobile=document.querySelector('.mobile button:first-child');if(homeMobile)homeMobile.addEventListener('click',showFeed);
   // Release camera tracks when leaving the camera tab.
   document.addEventListener('click',e=>{if(!e.target.closest('[data-open-social="camera"],[data-tab="camera"]')&&cameraStream&&activeTab==='camera'){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}});
-  showSocial('friends');showFeed();
+  window.addEventListener('pagehide',()=>{if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}});\n  document.addEventListener('visibilitychange',()=>{if(document.hidden&&cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}});\n  showSocial('friends');showFeed();
 })();
