@@ -225,6 +225,56 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
     }
 }
 
+
+static bool SaveWorldFile(const std::vector<Block>& blocks, int size, int type, int seed, bool creative) {
+    std::ofstream out("world.save", std::ios::binary);
+    if(!out) return false;
+    const char magic[8]={'B','L','K','W','O','R','L','D'};
+    out.write(magic,8);
+    int version=1, count=(int)blocks.size(), mode=creative?1:0;
+    out.write((char*)&version,sizeof(version));
+    out.write((char*)&size,sizeof(size));
+    out.write((char*)&type,sizeof(type));
+    out.write((char*)&seed,sizeof(seed));
+    out.write((char*)&mode,sizeof(mode));
+    out.write((char*)&count,sizeof(count));
+    for(const auto& b:blocks) {
+        out.write((char*)&b.p,sizeof(b.p));
+        out.write((char*)&b.c,sizeof(b.c));
+    }
+    return out.good();
+}
+
+static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int& seed, bool& creative) {
+    std::ifstream in("world.save", std::ios::binary);
+    if(!in) return false;
+    char magic[8]={};
+    in.read(magic,8);
+    const char expected[8]={'B','L','K','W','O','R','L','D'};
+    if(!in || std::memcmp(magic,expected,8)!=0) return false;
+    int version=0, newSize=0, newType=0, newSeed=0, mode=1, count=0;
+    in.read((char*)&version,sizeof(version));
+    in.read((char*)&newSize,sizeof(newSize));
+    in.read((char*)&newType,sizeof(newType));
+    in.read((char*)&newSeed,sizeof(newSeed));
+    in.read((char*)&mode,sizeof(mode));
+    in.read((char*)&count,sizeof(count));
+    if(!in || version!=1 || newSize<32 || newSize>256 || newType<0 || newType>3 || count<0 || count>2000000) return false;
+    std::vector<Block> loaded;
+    loaded.reserve(count);
+    for(int i=0;i<count;i++) {
+        Block b{};
+        in.read((char*)&b.p,sizeof(b.p));
+        in.read((char*)&b.c,sizeof(b.c));
+        if(!in || !std::isfinite(b.p.x) || !std::isfinite(b.p.y) || !std::isfinite(b.p.z) ||
+           b.p.x<0 || b.p.x>=newSize || b.p.z<0 || b.p.z>=newSize || b.p.y<0 || b.p.y>=64) return false;
+        loaded.push_back(b);
+    }
+    blocks.swap(loaded);
+    size=newSize; type=newType; seed=newSeed; creative=(mode!=0);
+    return true;
+}
+
 int main() {
     int W=1280, H=720, fpsLimit=120, fullscreen=0, graphicsQuality=1, fov=75, mouseSensitivity=25, controllerSensitivity=24;
     {
@@ -304,12 +354,21 @@ int main() {
     };
     auto runCommand = [&]() {
         std::string s(command);
-        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-11 /seed";
+        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-11 /seed /save /load";
         else if (s=="/day") { night=false; message="Daytime enabled."; }
         else if (s=="/night") { night=true; message="Nighttime enabled."; }
         else if (s=="/creative") { creative=true; message="Creative mode enabled."; }
         else if (s=="/survival") { creative=false; health=20; hunger=20; stamina=100.0f; foodCount=5; message="Survival mode enabled! You have 5 apples."; }
         else if (s=="/seed") message=TextFormat("World seed: %d",seed);
+        else if (s=="/save") message=SaveWorldFile(blocks,worldSize,worldType,seed,creative)?"World saved.":"Could not save world.";
+        else if (s=="/load") {
+            if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
+                RebuildHeightMap(blocks,worldSize,groundHeights);
+                if(worldModelReady) UnloadModel(worldModel);
+                worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; resetCamera();
+                message="Saved world loaded.";
+            } else message="No valid save found.";
+        }
         else if (s.rfind("/give ",0)==0) {
             int v=atoi(s.substr(6).c_str());
             if (v>=1 && v<=paletteCount) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
@@ -320,7 +379,7 @@ int main() {
     int menuFocus=0, menuItemCounter=0;
     auto button = [&](Rectangle r, const char* label, bool hot=false) {
         int item=menuItemCounter++;
-        int totalItems=screen==MAIN_MENU?3:(screen==PAUSED?4:(screen==WORLD_MENU?7:7));
+        int totalItems=screen==MAIN_MENU?4:(screen==PAUSED?4:(screen==WORLD_MENU?7:7));
         if((activeGamepad>=0) && item==0) {
             if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%totalItems;
             if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+totalItems)%totalItems;
@@ -619,10 +678,21 @@ int main() {
                 DrawRectangleRoundedLines({cx-205,112,410,390},.035f,12,Fade(WHITE,.24f));
                 DrawText("WELCOME TO",(int)cx-83,137,16,Color{190,211,226,255});
                 DrawText("BLOCKLANDS",(int)cx-155,160,36,WHITE);
-                DrawText("Explore. Build. Create.",(int)cx-105,203,17,LIGHTGRAY);
-                if(button({cx-150,252,300,58},"PLAY",true)) screen=WORLD_MENU;
-                if(button({cx-150,324,300,52},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
-                if(button({cx-150,390,300,52},"QUIT")) break;
+                DrawText("Explore. Build. Create.",(int)cx-105,203,17,LIGHTGRAY);\n                DrawText("Your worlds can now be saved locally.",(int)cx-130,224,13,Color{177,198,215,255});
+                if(button({cx-150,244,300,52},"PLAY",true)) screen=WORLD_MENU;
+                if(button({cx-150,308,300,48},"CONTINUE")) {
+                    if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
+                        RebuildHeightMap(blocks,worldSize,groundHeights);
+                        if(worldModelReady) UnloadModel(worldModel);
+                        worldModel=BuildWorldModel(blocks,worldSize);
+                        worldModelReady=true;
+                        resetCamera();
+                        screen=PLAYING; commandOpen=false; inventoryOpen=false; DisableCursor();
+                        message="Saved world loaded."; messageTime=3.0f;
+                    } else { message="No valid save found yet."; messageTime=3.0f; }
+                }
+                if(button({cx-150,368,300,48},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
+                if(button({cx-150,428,300,48},"QUIT")) break;
                 DrawText("WASD / CONTROLLER SUPPORTED",(int)cx-130,462,13,Fade(WHITE,.7f));
             } else if(screen==PAUSED) {
                 DrawText("PAUSED",(int)cx-85,126,34,WHITE);
