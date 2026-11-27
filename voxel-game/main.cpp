@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <algorithm>
 
 struct Block { Vector3 p; Color c; };
