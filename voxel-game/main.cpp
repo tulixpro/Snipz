@@ -36,9 +36,9 @@ static const Color palette[] = {
     {65,120,65,255}, {150,90,65,255}, {235,82,24,255},
     {112,76,45,255}, {232,91,137,255}
 };
-static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick","Lava","Wood","Flower"};
+static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick","Lava","Wood","Flower","Crafting Table"};
 static const char* worldNames[] = {"Green Valley","Flatlands","Highlands","Island"};
-static const int paletteCount = 11;
+static const int paletteCount = 12;
 
 static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::vector<int>& heights) {
     heights.assign(size * size, 0);
@@ -54,7 +54,7 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 static Texture2D CreateBlockAtlas() {
     // Clean, original voxel pixel-art tiles: broad color patches, not noisy per-pixel grain.
     Image image=GenImageColor(192,64,WHITE);
-    const Color bases[11]={
+    const Color bases[12]={
         {95,166,65,255},{134,96,62,255},{126,130,136,255},{194,174,104,255},
         {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255},
         {112,76,45,255},{232,91,137,255}
@@ -306,7 +306,7 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=256, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=256, worldType=0, seed=2026, selected=0, inventoryCursor=0;\n    int blockCounts[12]={0};
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
@@ -355,11 +355,11 @@ int main() {
     auto saveCurrentWorld = [&]() { return !blocks.empty() && SaveWorldFile(blocks,worldSize,worldType,seed,creative); };
     auto runCommand = [&]() {
         std::string s(command);
-        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-11 /seed /save /load";
+        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-12 /seed /save /load";
         else if (s=="/day") { night=false; message="Daytime enabled."; }
         else if (s=="/night") { night=true; message="Nighttime enabled."; }
         else if (s=="/creative") { creative=true; message="Creative mode enabled."; }
-        else if (s=="/survival") { creative=false; health=20; hunger=20; stamina=100.0f; foodCount=5; message="Survival mode enabled! You have 5 apples."; }
+        else if (s=="/survival") { creative=false; health=20; hunger=20; stamina=100.0f; foodCount=5; message="Survival mode enabled! Collect blocks to build."; }
         else if (s=="/seed") message=TextFormat("World seed: %d",seed);
         else if (s=="/save") message=SaveWorldFile(blocks,worldSize,worldType,seed,creative)?"World saved.":"Could not save world.";
         else if (s=="/load") {
@@ -453,7 +453,7 @@ int main() {
                 else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
             }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
-            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | Hold LMB to mine | RMB build"; messageTime=5; }
+            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | Hold LMB mine | RMB build | C craft table"; messageTime=5; }\n            if(IsKeyPressed(KEY_C) && !creative) { if(blockCounts[9]>=4) { blockCounts[9]-=4; blockCounts[11]++; message="Crafted 1 crafting table from 4 wood."; } else { message="Need 4 wood to craft a crafting table."; } messageTime=3.0f; }
             if (!commandOpen) {
                 Vector2 mouse=GetMouseDelta();
                 yaw += mouse.x*(mouseSensitivity/10000.0f);
@@ -588,7 +588,7 @@ int main() {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
-                        if(!occupied && p.y>=0 && p.y<63 && Vector3Distance(p,camera.position)>1.4f) { blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
+                        if(!occupied && p.y>=0 && p.y<63 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     }
                 } else { miningTarget=-1; miningTimer=0.0f; }
             }
@@ -658,9 +658,9 @@ int main() {
                 int x=start+i*62;
                 DrawRectangleRounded({(float)x,(float)hotY,54,48},.12f,6,i==selected?Color{190,139,54,255}:Color{38,50,68,255});
                 DrawRectangle(x+8,hotY+6,38,25,palette[i]);
-                DrawText(TextFormat("%d",i+1),x+22,hotY+33,12,WHITE);
+                DrawText(creative?"INF":TextFormat("%d",blockCounts[i]),x+8,hotY+33,10,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | HOLD LMB MINE | RMB PLACE | WHEEL BLOCK | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | HOLD LMB MINE | RMB PLACE | WHEEL BLOCK | E INVENTORY | C CRAFT",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
