@@ -198,9 +198,10 @@ int main() {
     int menuFocus=0, menuItemCounter=0;
     auto button = [&](Rectangle r, const char* label, bool hot=false) {
         int item=menuItemCounter++;
-        if(IsGamepadAvailable(0)) {
-            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%menuItemCounter;
-            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+menuItemCounter)%menuItemCounter;
+        int totalItems=screen==MAIN_MENU?3:(screen==PAUSED?4:(screen==WORLD_MENU?5:3));
+        if(IsGamepadAvailable(0) && item==0) {
+            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%totalItems;
+            if(IsGamepadButtonPressed(0,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(0,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+totalItems)%totalItems;
         }
         bool focused=(item==menuFocus);
         Vector2 m=GetMousePosition();
