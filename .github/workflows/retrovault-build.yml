@@ -1,0 +1,40 @@
+name: Build RetroVault launcher
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arcade-launcher
+    paths:
+      - "arcade-launcher/**"
+      - ".github/workflows/retrovault-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: arcade-launcher
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: arcade-launcher/package.json
+      - name: Install dependencies
+        run: npm install
+      - name: Build Windows installer
+        run: npm run dist
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: RetroVault-Windows-Installer
+          path: arcade-launcher/dist/*.exe
+          if-no-files-found: error
+          retention-days: 14
