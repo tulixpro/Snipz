@@ -11,6 +11,7 @@
 #include <cmath>
 
 struct Block { Vector3 p; Color c; };
+static Texture2D gBlockAtlas={0};
 
 static float noise2(int x, int z, int seed) {
     unsigned int n = (unsigned int)(x * 374761393u + z * 668265263u + seed * 1442695041u);
@@ -36,6 +37,34 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
     }
 }
 
+static Texture2D CreateBlockAtlas() {
+    Image image=GenImageColor(64,32,WHITE);
+    const Color bases[8]={
+        {92,176,88,255},{130,105,78,255},{115,125,140,255},{190,160,90,255},
+        {65,135,190,255},{220,225,232,255},{65,120,65,255},{150,90,65,255}
+    };
+    for(int type=0;type<8;type++) {
+        int ox=(type%4)*16, oy=(type/4)*16;
+        for(int y=0;y<16;y++) for(int x=0;x<16;x++) {
+            float n=noise2(x+type*31,y+type*17,2026);
+            float shade=0.78f+n*0.38f;
+            Color p=bases[type];
+            if(type==7 && (y%5==0 || ((x+(y/5%2)*4)%8==0))) shade*=0.58f;
+            if(type==4 && ((x+y*3)%11<2)) shade=1.28f;
+            if(type==6 && n<0.24f) shade*=0.68f;
+            if(type==0 && y<4) shade*=1.13f;
+            p.r=(unsigned char)Clamp(p.r*shade,0,255);
+            p.g=(unsigned char)Clamp(p.g*shade,0,255);
+            p.b=(unsigned char)Clamp(p.b*shade,0,255);
+            ImageDrawPixel(&image,ox+x,oy+y,p);
+        }
+    }
+    Texture2D texture=LoadTextureFromImage(image);
+    UnloadImage(image);
+    SetTextureFilter(texture,TEXTURE_FILTER_POINT);
+    return texture;
+}
+
 static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     constexpr int MAX_Y=64;
     std::vector<unsigned char> solid(size*size*MAX_Y,0);
@@ -45,13 +74,18 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
         if(x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y) solid[index(x,y,z)]=1;
     }
     auto has=[&](int x,int y,int z){ return x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y&&solid[index(x,y,z)]!=0; };
-    std::vector<float> vertices, normals;
+    std::vector<float> vertices, normals, texcoords;
     std::vector<unsigned char> colors;
-    auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color) {
+    auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color, int type) {
         Vector3 p[6]={a,b,c,a,c,d};
-        for(const auto& v:p) {
+        float u0=((type%4)*16+0.5f)/64.0f, u1=((type%4)*16+15.5f)/64.0f;
+        float v0=((type/4)*16+0.5f)/32.0f, v1=((type/4)*16+15.5f)/32.0f;
+        const float uv[12]={u0,v0,u0,v1,u1,v1,u0,v0,u1,v1,u1,v0};
+        for(int i=0;i<6;i++) {
+            const auto& v=p[i];
             vertices.push_back(v.x); vertices.push_back(v.y); vertices.push_back(v.z);
             normals.push_back(n.x); normals.push_back(n.y); normals.push_back(n.z);
+            texcoords.push_back(uv[i*2]); texcoords.push_back(uv[i*2+1]);
             colors.push_back(color.r); colors.push_back(color.g); colors.push_back(color.b); colors.push_back(color.a);
         }
     };
@@ -59,13 +93,15 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
         int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
         if(x<0||x>=size||z<0||z>=size||y<0||y>=MAX_Y) continue;
         float x0=x-.5f,x1=x+.5f,y0=y-.5f,y1=y+.5f,z0=z-.5f,z1=z+.5f;
+        int blockType=0;
+        for(int t=0;t<paletteCount;t++) if(block.c.r==palette[t].r && block.c.g==palette[t].g && block.c.b==palette[t].b) { blockType=t; break; }
         auto shade=[](Color c,float f){ return Color{(unsigned char)(c.r*f),(unsigned char)(c.g*f),(unsigned char)(c.b*f),c.a}; };
-        if(!has(x,y+1,z)) face({0,1,0},{x0,y1,z0},{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},shade(block.c,1.12f));
-        if(!has(x,y-1,z)) face({0,-1,0},{x0,y0,z1},{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},shade(block.c,.55f));
-        if(!has(x-1,y,z)) face({-1,0,0},{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y1,z0},shade(block.c,.78f));
-        if(!has(x+1,y,z)) face({1,0,0},{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y1,z1},shade(block.c,.86f));
-        if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},shade(block.c,.72f));
-        if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},shade(block.c,.92f));
+        if(!has(x,y+1,z)) face({0,1,0},{x0,y1,z0},{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},shade(WHITE,1.12f),blockType);
+        if(!has(x,y-1,z)) face({0,-1,0},{x0,y0,z1},{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},shade(WHITE,.55f),blockType);
+        if(!has(x-1,y,z)) face({-1,0,0},{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y1,z0},shade(WHITE,.78f),blockType);
+        if(!has(x+1,y,z)) face({1,0,0},{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y1,z1},shade(WHITE,.86f),blockType);
+        if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},shade(WHITE,.72f),blockType);
+        if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},shade(WHITE,.92f),blockType);
     }
     Mesh mesh={};
     mesh.vertexCount=(int)(vertices.size()/3);
@@ -74,11 +110,15 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     mesh.vertices=(float*)MemAlloc(vertices.size()*sizeof(float));
     mesh.normals=(float*)MemAlloc(normals.size()*sizeof(float));
     mesh.colors=(unsigned char*)MemAlloc(colors.size());
+    mesh.texcoords=(float*)MemAlloc(texcoords.size()*sizeof(float));
     std::memcpy(mesh.vertices,vertices.data(),vertices.size()*sizeof(float));
     std::memcpy(mesh.normals,normals.data(),normals.size()*sizeof(float));
     std::memcpy(mesh.colors,colors.data(),colors.size());
+    std::memcpy(mesh.texcoords,texcoords.data(),texcoords.size()*sizeof(float));
     UploadMesh(&mesh,false);
-    return LoadModelFromMesh(mesh);
+    Model model=LoadModelFromMesh(mesh);
+    if(model.materialCount>0 && gBlockAtlas.id>0) model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture=gBlockAtlas;
+    return model;
 }
 
 static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int seed) {
@@ -134,6 +174,7 @@ int main() {
     InitWindow(W,H,"BLOCKLANDS");
     if (!IsWindowReady()) return 1;
     SetTargetFPS(fpsLimit<=0?0:fpsLimit);
+    gBlockAtlas=CreateBlockAtlas();
     if(graphicsQuality==0) { W=960; H=540; SetWindowSize(W,H); }
     else if(graphicsQuality==2) { W=1600; H=900; SetWindowSize(W,H); }
 
@@ -279,7 +320,7 @@ int main() {
                 pitch=Clamp(pitch-mouse.y*(mouseSensitivity/10000.0f),-1.45f,1.45f);
                 Vector3 look={cosf(yaw)*cosf(pitch),sinf(pitch),sinf(yaw)*cosf(pitch)};
                 Vector3 forward=Vector3Normalize({look.x,0,look.z});
-                Vector3 right=Vector3Normalize({forward.z,0,-forward.x});
+                Vector3 right=Vector3Normalize({-forward.z,0,forward.x});
                 Vector3 move={0,0,0};
                 if(IsKeyDown(KEY_W)) move=Vector3Add(move,forward);
                 if(IsKeyDown(KEY_S)) move=Vector3Subtract(move,forward);
@@ -301,21 +342,20 @@ int main() {
                 }
                 if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
                 camera.position=Vector3Add(camera.position,move);
-                camera.position.x=Clamp(camera.position.x,0.0f,(float)worldSize-1.0f);
-                camera.position.z=Clamp(camera.position.z,0.0f,(float)worldSize-1.0f);
                 if((IsKeyPressed(KEY_SPACE) || ((activeGamepad>=0) && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
                 velocity.y-=18.0f*dt;
                 camera.position.y+=velocity.y*dt;
-                int gx=Clamp((int)std::lround(camera.position.x),0,worldSize-1);
-                int gz=Clamp((int)std::lround(camera.position.z),0,worldSize-1);
-                int safeHeight=groundHeights.empty()?0:groundHeights[gx*worldSize+gz];
-                for(int ox=-1;ox<=1;++ox) for(int oz=-1;oz<=1;++oz) {
-                    int sx=Clamp(gx+ox,0,worldSize-1), sz=Clamp(gz+oz,0,worldSize-1);
-                    if(!groundHeights.empty()) safeHeight=std::max(safeHeight,groundHeights[sx*worldSize+sz]);
-                }
+                int gx=(int)std::lround(camera.position.x);
+                int gz=(int)std::lround(camera.position.z);
+                bool insideWorld=gx>=0 && gx<worldSize && gz>=0 && gz<worldSize;
+                int safeHeight=(insideWorld && !groundHeights.empty())?groundHeights[gx*worldSize+gz]:-1000;
                 float floorY=(float)safeHeight+1.65f;
-                if(camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
-                if(camera.position.y<1.65f) { camera.position.y=1.65f; velocity.y=0; onGround=true; }
+                if(insideWorld && camera.position.y<floorY) { camera.position.y=floorY; velocity.y=0; onGround=true; }
+                if(camera.position.y<-24.0f) {
+                    resetCamera();
+                    message="You fell into the void. Respawned at spawn.";
+                    messageTime=4.0f;
+                }
                 camera.target=Vector3Add(camera.position,look);
 
                 if((activeGamepad>=0)) {
@@ -368,7 +408,7 @@ int main() {
             ClearBackground(sky);
             BeginMode3D(camera);
             DrawSphere(night?Vector3{worldSize*.78f,24,worldSize*.18f}:Vector3{worldSize*.18f,27,worldSize*.22f},2.4f,night?Color{220,226,245,255}:Color{255,224,142,255});
-            DrawPlane({worldSize/2.0f,-.55f,worldSize/2.0f},{(float)worldSize+4,(float)worldSize+4},night?Color{30,55,45,255}:Color{70,130,75,255});
+            
             if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
             EndMode3D();
 
@@ -391,7 +431,7 @@ int main() {
                 DrawRectangle(x+8,hotY+6,38,25,palette[i]);
                 DrawText(TextFormat("%d",i+1),x+22,hotY+33,12,WHITE);
             }
-            DrawText((activeGamepad>=0)?"CONTROLLER: LEFT STICK MOVE | RIGHT STICK LOOK | A JUMP | RT MINE | LT PLACE | LB/RB BLOCKS":"WASD MOVE   SPACE JUMP   LMB MINE   RMB PLACE   T COMMANDS   F2 WORLDS",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LEFT STICK MOVE | RIGHT STICK LOOK | A JUMP | RT MINE | LT PLACE | LB/RB BLOCKS":"WASD MOVE (W FORWARD) | MOUSE LOOK | SPACE JUMP | LMB MINE | RMB PLACE | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
@@ -459,6 +499,7 @@ int main() {
     }
     { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\nheight="<<GetScreenHeight()<<"\nfps="<<menuFPS<<"\nfullscreen="<<fullscreen<<"\ngraphics="<<graphicsQuality<<"\nfov="<<fov<<"\nmouse_sens="<<mouseSensitivity<<"\ncontroller_sens="<<controllerSensitivity<<"\n"; }
     if(worldModelReady) UnloadModel(worldModel);
+    if(gBlockAtlas.id>0) UnloadTexture(gBlockAtlas);
     EnableCursor();
     CloseWindow();
     return 0;
