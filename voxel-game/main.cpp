@@ -575,6 +575,7 @@ int main() {
                         if(miningTarget!=hit) { miningTarget=hit; miningTimer=0.0f; }
                         miningTimer+=dt;
                         if(miningTimer>=0.22f) {
+                            if(!creative) { for(int bt=0;bt<paletteCount;bt++) if(blocks[hit].c.r==palette[bt].r && blocks[hit].c.g==palette[bt].g && blocks[hit].c.b==palette[bt].b) { blockCounts[bt]++; break; } }
                             blocks.erase(blocks.begin()+hit);
                             miningTarget=-1; miningTimer=0.0f;
                             RebuildHeightMap(blocks,worldSize,groundHeights);
