@@ -342,4 +342,4 @@ $('tutorialSkip').onclick=closeTutorial;
 $('tutorialBack').onclick=()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}};
 $('tutorialNext').onclick=()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else closeTutorial()};
 $('tutorialModal').addEventListener('click',e=>{if(e.target===$('tutorialModal'))closeTutorial()});
-</script><script type="module" src="./social.js"></script></body></html>
+</script><link rel="stylesheet" href="./safety.css"><script type="module" src="./social.js"></script><script defer src="./safety.js"></script></body></html>
