@@ -1,81 +1,126 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101014"><title>Snipz – Kurzvideos</title>
-<style>
-:root{color-scheme:dark;--bg:#0c0c10;--panel:#181820;--muted:#9b9baa;--pink:#ff356b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font:15px/1.5 Inter,system-ui,Arial}button,input,textarea{font:inherit}button{cursor:pointer;color:inherit;border:0}.top{height:64px;position:sticky;top:0;z-index:5;background:#101014ed;backdrop-filter:blur(14px);border-bottom:1px solid #ffffff14;display:flex;align-items:center;justify-content:space-between;padding:0 max(16px,calc((100vw - 1100px)/2));gap:14px}.brand{font-size:26px;font-weight:950;letter-spacing:-1.5px}.brand span{color:var(--pink)}.search{width:min(360px,40vw);background:#25252e;border:1px solid #ffffff18;border-radius:24px;padding:10px 15px;color:#fff}.btn{background:#292933;border-radius:24px;padding:10px 16px;font-weight:750}.primary{background:var(--pink);border-radius:24px;padding:10px 17px;font-weight:850}.layout{max-width:1100px;margin:auto;display:grid;grid-template-columns:190px minmax(0,650px) 220px;gap:22px;padding:22px 16px}.side{position:sticky;top:85px;height:max-content}.nav{padding:13px;border-radius:12px;color:#ccc;font-weight:700}.nav.active,.nav:hover{background:#24242d;color:white}.feedhead{text-align:center;font-weight:800;margin:0 0 17px}.feed{display:grid;gap:18px}.post,.panel{background:var(--panel);border:1px solid #ffffff12;border-radius:17px;overflow:hidden}.posthead{display:flex;align-items:center;justify-content:space-between;padding:14px}.user{display:flex;gap:10px;align-items:center}.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#ff356b,#755bff);display:grid;place-items:center;font-weight:900}.muted{color:var(--muted);font-size:12px}.follow{background:#ffffff14;border:1px solid #ffffff22;border-radius:20px;padding:7px 13px}.media{height:min(62vh,550px);min-height:300px;background:#242432;position:relative}.media video{width:100%;height:100%;object-fit:contain;background:#050507}.actions{display:flex;gap:18px;padding:12px 15px 4px}.action{background:none;font-size:20px}.action span{font-size:13px;color:#bbb}.liked{color:var(--pink)}.caption{padding:8px 15px 15px}.caption b{margin-right:7px}.comments{padding:0 15px 15px}.comment{border-top:1px solid #ffffff12;padding:8px 0;font-size:13px}.comment b{margin-right:7px}.commentform{display:flex;gap:7px;margin-top:8px}.commentform input,.field{min-width:0;flex:1;background:#272731;border:1px solid #ffffff20;border-radius:22px;padding:10px 13px;color:white}.commentform button{background:var(--pink);border-radius:22px;padding:0 14px}.panel{padding:16px;margin-bottom:13px}.panel h3{margin:0 0 10px}.panel p{color:var(--muted);font-size:13px}.modal{display:none;position:fixed;inset:0;z-index:20;background:#000b;place-items:center;padding:16px}.modal.show{display:grid}.dialog{width:min(440px,100%);background:#1b1b24;border:1px solid #ffffff22;border-radius:20px;padding:22px}.dialog h2{margin:0 0 6px}.dialog input,.dialog textarea{width:100%;margin:7px 0;background:#292933;color:white;border:1px solid #ffffff22;border-radius:12px;padding:12px}.dialog textarea{min-height:90px}.row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.notice{max-width:850px;margin:14px auto 0;padding:12px 16px;background:#302817;border:1px solid #6e5727;border-radius:12px;color:#ffe4a3;font-size:13px}.empty{padding:35px;text-align:center;color:var(--muted)}.toast{display:none;position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#333;padding:11px 18px;border-radius:24px;z-index:40}.mobile{display:none}
-/* TikTok-style vertical snap feed */
-.feed{height:calc(100dvh - 105px);overflow-y:auto;overscroll-behavior-y:contain;scroll-snap-type:y mandatory;scrollbar-width:none;gap:14px;padding-bottom:12px}
-.feed::-webkit-scrollbar{display:none}
-.feed>.post{height:calc(100dvh - 120px);min-height:480px;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column}
-.feed>.post .media{flex:1;min-height:0;height:auto}
-.feed>.post .media video{object-fit:cover}
-.feed>.post .comments{max-height:150px;overflow-y:auto}
-@media(max-width:600px){.layout{padding:8px 0 0}.feed{height:calc(100dvh - 122px);gap:8px;padding-bottom:0}.feed>.post{height:calc(100dvh - 130px);min-height:440px}.feed>.post .media{flex:1;min-height:0}.feed>.post .media video{object-fit:cover}}
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#081426">
+  <meta name="description" content="Snipz – eine interaktive Design-Vorschau für eine Social-App.">
+  <title>Snipz – Öffentliche Vorschau</title>
+  <style>
+    :root{color-scheme:dark;--bg:#081426;--panel:#10213a;--line:#28496f;--blue:#278cff;--cyan:#62c7ff;--muted:#a9bdd7}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -10%,#174477 0,#0a1930 42%,var(--bg) 78%);color:#f4f8ff;font:15px/1.5 system-ui,Arial,sans-serif}
+    button{font:inherit;cursor:pointer;color:inherit}.top{height:68px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 max(18px,calc((100vw - 1060px)/2));border-bottom:1px solid #8bcaff25;background:#09172aeF;position:sticky;top:0;backdrop-filter:blur(14px);z-index:5}
+    .logo{font-size:29px;font-weight:950;letter-spacing:-1.5px;background:linear-gradient(100deg,#fff,#7fcaff,#278cff);color:transparent;background-clip:text}
+    .pill{border:1px solid #5baeff66;background:#15365a;border-radius:30px;padding:7px 12px;color:#cce8ff;font-size:12px;font-weight:800}
+    main{max-width:1060px;margin:auto;padding:34px 18px 70px}.hero{text-align:center;padding:35px 12px 30px}.eyebrow{color:#7dc7ff;font-size:12px;font-weight:900;letter-spacing:3px}.hero h1{font-size:clamp(38px,7vw,68px);line-height:1.02;letter-spacing:-2px;margin:12px 0}.hero p{color:var(--muted);max-width:610px;margin:0 auto 20px;font-size:17px}
+    .hero-mark{display:inline-block;background:linear-gradient(110deg,#1678ed,#56c2ff);padding:11px 20px;border-radius:28px;font-weight:900;box-shadow:0 8px 30px #1678ed55}
+    .notice{max-width:800px;margin:0 auto 26px;padding:13px 16px;border:1px solid #4976a6;background:#102744;border-radius:14px;color:#d9ecff;font-size:13px}
+    .section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:28px 0 13px}.section-title h2{margin:0;font-size:21px}.muted{color:var(--muted);font-size:12px}
+    .stories{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.story{min-height:220px;border:1px solid #ffffff20;border-radius:19px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;overflow:hidden;position:relative;background:linear-gradient(145deg,#244f78,#182443 55%,#5a3d79);transition:transform .2s,border-color .2s}.story:nth-child(2){background:linear-gradient(145deg,#e58e78,#704c80 55%,#182b4c)}.story:nth-child(3){background:linear-gradient(145deg,#327d91,#29376f 60%,#171d39)}.story:nth-child(4){background:linear-gradient(145deg,#7458b4,#252b5d 55%,#101b36)}.story:hover{transform:translateY(-3px);border-color:#85caff}.story:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#07101ddd,transparent 70%)}.story>*{position:relative}.story-top{display:flex;align-items:center;gap:9px;font-weight:800}.avatar{width:37px;height:37px;border-radius:50%;display:grid;place-items:center;background:#ffffff25;border:2px solid #ffffffaa}.story strong{font-size:22px;line-height:1.1}.story small{color:#e1eaff}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}.card{background:linear-gradient(150deg,#122844,#0e1b30);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 14px 36px #0003}.card h3{margin:0 0 8px}.card p{color:var(--muted);margin:0}.mock-chat{display:grid;gap:9px;margin-top:16px}.bubble{max-width:86%;padding:10px 13px;background:#1a3556;border-radius:15px;color:#eaf5ff;font-size:13px}.bubble.right{justify-self:end;background:#176bc4}.feature-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}.feature{padding:12px;border:1px solid #ffffff17;background:#0d1d32;border-radius:13px}.feature b{display:block}.feature span{font-size:12px;color:var(--muted)}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.tab{border:1px solid #31577f;background:#112945;border-radius:24px;padding:9px 14px}.tab[aria-pressed=true]{background:#176bc4;border-color:#70bfff}.demo-panel{min-height:120px}.footer{border-top:1px solid #8bcaff20;margin-top:32px;padding-top:18px;color:#91a9c7;font-size:12px;text-align:center}
+    .modal{position:fixed;inset:0;background:#020916ed;z-index:10;display:none;place-items:center;padding:18px}.modal.open{display:grid}.modal-inner{width:min(440px,100%);min-height:500px;border:1px solid #77bfff66;border-radius:24px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(145deg,#23558a,#172044 65%,#4b3470);box-shadow:0 20px 80px #0009}.modal button{align-self:flex-end;background:#ffffff22;border:1px solid #ffffff55;border-radius:24px;padding:8px 14px}.modal h2{font-size:35px;line-height:1.05}.modal p{color:#e1ecff}
+    @media(max-width:700px){.stories{grid-template-columns:repeat(2,1fr)}.story{min-height:190px}.grid{grid-template-columns:1fr}.hero{padding-top:22px}.top{padding:0 14px}.feature-list{grid-template-columns:1fr 1fr}}
+    @media(max-width:390px){.stories{gap:8px}.story{padding:11px;min-height:175px}.feature-list{grid-template-columns:1fr}}
+  
+    /* Desktop layout upgrade: wider canvas and balanced three-column composition */
+    @media(min-width:1000px){
+      main{max-width:1320px;padding:38px 30px 84px}
+      .hero{padding:48px 20px 38px}
+      .hero p{max-width:720px;font-size:18px}
+      .stories{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+      .story{min-height:270px;padding:18px;border-radius:22px}
+      .story strong{font-size:25px}
+      .section-title{margin:38px 0 16px}
+      .section-title h2{font-size:24px}
+      .grid{grid-template-columns:minmax(0,1.08fr) minmax(340px,.92fr);gap:20px}
+      .card{padding:24px;border-radius:22px}
+      .mock-chat{gap:12px;margin-top:22px}
+      .bubble{font-size:14px;padding:12px 16px}
+      .feature-list{gap:13px;margin-top:22px}
+      .feature{padding:16px;border-radius:15px}
+      .demo-panel{padding:24px}
+      .footer{margin-top:48px;padding-top:24px}
+    }
+    @media(min-width:1450px){
+      main{max-width:1440px}
+      .hero h1{font-size:76px}
+      .stories{gap:22px}
+      .story{min-height:300px}
+    }
+    @media(min-width:701px) and (max-width:999px){
+      main{max-width:900px;padding:28px 22px 60px}
+      .story{min-height:230px}
+      .grid{gap:12px}
+    }
+    @media(max-width:700px){
+      main{padding-top:20px}
+      .hero h1{letter-spacing:-1.3px}
+      .story{min-height:175px}
+    }
+    @media(hover:hover){
+      .story{cursor:pointer}
+      .story:hover{box-shadow:0 16px 38px #0005,0 0 22px #55b5ff22}
+      .tab:hover{background:#1b4168}
+    }
 
-@media(max-width:850px){.layout{grid-template-columns:64px minmax(0,650px);justify-content:center}.side .label,.right{display:none}.nav{text-align:center;padding:13px 5px}}
-@media(max-width:600px){.top{height:56px;padding:0 11px}.search{width:36vw;padding:8px}.top .btn{display:none}.layout{display:block;padding:12px 0 70px}.side,.right{display:none}.feed{gap:12px}.post{border-radius:0;border-left:0;border-right:0}.media{height:62vh;min-height:340px}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:10;justify-content:space-around;background:#15151bf2;border-top:1px solid #ffffff20;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}.mobile button{background:none;font-size:20px}.notice{margin:10px;border-radius:10px}}
-
-/* Snipz visual polish */
-:root{--pink:#ff3d78;--violet:#8065ff;--panel:#171720}
-body{background:radial-gradient(ellipse at 50% -18%,#352044 0%,#111019 38%,var(--bg) 72%)}
-.brand{background:linear-gradient(95deg,#fff 25%,#ff6b9a 58%,#9a83ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.btn,.primary,.follow,.action{transition:transform .18s ease,filter .18s ease,background .18s ease}
-.btn:hover,.primary:hover,.follow:hover{transform:translateY(-1px);filter:brightness(1.13)}
-.primary{background:linear-gradient(105deg,#ff356b,#a64dff);box-shadow:0 5px 22px #ff356b35}
-.post,.panel{box-shadow:0 12px 36px #0003;backdrop-filter:blur(10px)}
-.post{border-color:#ffffff18}
-.avatar{background:linear-gradient(135deg,#ff356b,#8a5bff);box-shadow:0 0 18px #a65bff45}
-.search:focus,.field:focus,.dialog input:focus,.dialog textarea:focus{outline:2px solid #a36cff;outline-offset:1px}
-</style></head>
+  </style>
+</head>
 <body>
-<header class="top"><div class="brand">snip<span>z</span></div><input id="search" class="search" placeholder="Videos suchen …"><button class="btn" id="authBtn">Anmelden</button><button class="primary" id="uploadBtn">＋ Hochladen</button></header>
-<div id="setupNotice" class="notice" hidden>Snipz wird gerade sicher eingerichtet. Konten, Uploads und Interaktionen sind erst verfügbar, wenn der neue Server vollständig eingerichtet und getestet ist.</div>
-<div class="layout"><aside class="side"><div class="nav active">⌂ <span class="label"> Für dich</span></div><div class="nav">◎ <span class="label"> Entdecken</span></div><div class="nav" id="sideUpload">＋ <span class="label"> Hochladen</span></div><div class="nav" id="profileNav">♙ <span class="label"> Mein Profil</span></div><div class="nav" id="logoutNav">↪ <span class="label"> Abmelden</span></div></aside>
-<main><div class="feedhead">Für dich · Kurzvideos</div><section class="feed" id="feed"><div class="empty">Feed wird geladen …</div></section></main>
-<aside class="right"><div class="panel"><h3>🔥 Willkommen bei Snipz</h3><p>Entdecke Clips, teile Ideen und finde deine Community.</p><button class="primary" id="rightUpload">Video erstellen</button></div><div class="panel"><h3>Community</h3><p>Sei freundlich. Teile nur Inhalte, an denen du die nötigen Rechte hast. Melde problematische Beiträge.</p></div></aside></div>
-<nav class="mobile"><button>⌂</button><button id="mobileSearch">⌕</button><button id="mobileUpload">＋</button><button id="mobileProfile">♙</button></nav>
-<div class="modal" id="authModal"><div class="dialog"><h2 id="authTitle">Bei Snipz anmelden</h2><p class="muted">Nutze deine E-Mail-Adresse und ein Passwort.</p><input id="email" type="email" autocomplete="email" placeholder="E-Mail"><input id="password" type="password" autocomplete="current-password" placeholder="Passwort (mind. 8 Zeichen)"><input id="username" maxlength="24" placeholder="Benutzername (bei Registrierung)"><div class="row"><button class="btn" id="authClose">Schließen</button><button class="btn" id="toggleAuth">Konto erstellen</button><button class="primary" id="authSubmit">Anmelden</button></div></div></div>
-<div class="modal" id="uploadModal"><div class="dialog"><h2>Video veröffentlichen</h2><p class="muted">MP4, WebM oder MOV · maximal 100 MB.</p><input id="videoFile" type="file" accept="video/mp4,video/webm,video/quicktime"><textarea id="videoCaption" maxlength="500" placeholder="Beschreibe dein Video …"></textarea><div class="row"><button class="btn" id="uploadClose">Abbrechen</button><button class="primary" id="publish">Veröffentlichen</button></div></div></div>
-<div class="modal" id="profileModal"><div class="dialog"><h2>Dein Profil & Konto</h2><p class="muted" id="accountStats">Deine Konto-Übersicht</p><input id="profileUsername" maxlength="24" placeholder="Benutzername"><input id="profileDisplay" maxlength="40" placeholder="Anzeigename"><textarea id="profileBio" maxlength="160" placeholder="Kurzbeschreibung"></textarea><div style="border-top:1px solid #ffffff20;margin-top:12px;padding-top:12px"><b>Passwort ändern</b><input id="newPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Neues Passwort (mind. 8 Zeichen)"><button class="btn" id="passwordSave" style="width:100%">Passwort aktualisieren</button><p class="muted">Dein Passwort wird vom Anmeldedienst geschützt verwaltet und nicht in deinem Profil gespeichert.</p></div><div class="row"><button class="btn" id="profileClose">Schließen</button><button class="primary" id="profileSave">Speichern</button></div></div></div>
-<div class="toast" id="toast"></div>
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
-const configured=SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('YOUR_PROJECT')&&SUPABASE_ANON_KEY.length>30&&!SUPABASE_ANON_KEY.includes('YOUR_');
-const supabase=configured?createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
-let session=null,profile=null,registerMode=false,following=new Set();
-const $=id=>document.getElementById(id),feed=$('feed');
-function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2600)}
-function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function modal(id,show){$(id).classList.toggle('show',show)}
-function needConfig(){if(!supabase){$('setupNotice').hidden=false;feed.innerHTML='<div class="empty">Die Oberfläche ist bereit. Der sichere Snipz-Server wird noch eingerichtet. Konten, Uploads, Likes und Kommentare werden nach dem Server-Test freigeschaltet.</div>';return true}return false}
-async function loadProfile(){if(!session){profile=null;return}const {data,error}=await supabase.from('profiles').select('*').eq('id',session.user.id).maybeSingle();if(error)throw error;if(!data){const suggested=(session.user.email?.split('@')[0]||'creator').toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20)||'creator';const {data:d,error:e}=await supabase.from('profiles').insert({id:session.user.id,username:suggested,display_name:suggested}).select().single();if(e)throw e;profile=d}else profile=data}
-async function refresh(){if(needConfig())return;const q=$('search').value.trim();let query=supabase.from('videos').select('id,user_id,storage_path,caption,created_at,profiles(username,display_name,avatar_url),likes(user_id),comments(id,user_id,body,created_at,profiles(username))').eq('visibility','public').order('created_at',{ascending:false}).limit(40);if(q)query=query.ilike('caption','%'+q.replace(/[%_]/g,'')+'%');const {data,error}=await query;if(error){feed.innerHTML='<div class="empty">Feed konnte nicht geladen werden. Prüfe die Supabase-Tabellen und Policies.</div>';console.error(error);return}
-const {data:followData}=session?await supabase.from('follows').select('following_id').eq('follower_id',session.user.id):{data:[]};following=new Set((followData||[]).map(x=>x.following_id));
-if(!data?.length){feed.innerHTML='<div class="empty">Noch keine Videos. Melde dich an und lade den ersten Clip hoch!</div>';return}
-feed.innerHTML='';for(const p of data){const prof=p.profiles||{},name=prof.display_name||prof.username||'Snipz Creator',likes=p.likes||[],comments=p.comments||[],isLiked=!!session&&likes.some(x=>x.user_id===session.user.id);const {data:urlData}=supabase.storage.from('videos').getPublicUrl(p.storage_path);const card=document.createElement('article');card.className='post';card.innerHTML='<div class="posthead"><div class="user"><div class="avatar">'+esc(name[0]?.toUpperCase()||'S')+'</div><div><b>'+esc(name)+'</b><div class="muted">@'+esc(prof.username||'creator')+'</div></div></div><button class="follow" data-follow="'+p.user_id+'">'+(following.has(p.user_id)?'Gefolgt':'Folgen')+'</button></div><div class="media"><video src="'+esc(urlData.publicUrl)+'" controls playsinline preload="metadata"></video></div><div class="actions"><button class="action '+(isLiked?'liked':'')+'" data-like="'+p.id+'">'+(isLiked?'♥':'♡')+' <span>'+likes.length+'</span></button><button class="action" data-comment-toggle="'+p.id+'">▢ <span>'+comments.length+' Kommentare</span></button><button class="action" data-report="'+p.id+'">⚑ <span>Melden</span></button></div><div class="caption"><b>'+esc(prof.username||'creator')+'</b>'+esc(p.caption||'')+'</div><div class="comments" id="comments-'+p.id+'" hidden>'+comments.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(c=>'<div class="comment"><b>'+esc(c.profiles?.username||'Nutzer')+'</b>'+esc(c.body)+'</div>').join('')+(session?'<form class="commentform" data-comment-form="'+p.id+'"><input name="body" maxlength="500" placeholder="Kommentar schreiben …" required><button>Senden</button></form>':'<button class="btn" data-login-comment style="width:100%;margin-top:8px">Anmelden, um zu kommentieren</button>')+'</div>';feed.append(card)}
-// Autoplay only the clip currently in view; pause clips when scrolling away.
-if(window.snipzVideoObserver)window.snipzVideoObserver.disconnect();
-window.snipzVideoObserver=new IntersectionObserver(entries=>{for(const entry of entries){const video=entry.target;if(entry.isIntersecting&&entry.intersectionRatio>=0.65){video.muted=true;video.play().catch(()=>{})}else video.pause()}},{root:feed,threshold:[0,0.65,1]});
-feed.querySelectorAll('video').forEach(video=>window.snipzVideoObserver.observe(video));
-}
-async function refreshAuth(){if(needConfig())return;const {data}=await supabase.auth.getSession();session=data.session;try{await loadProfile()}catch(e){console.error(e);toast('Profil konnte nicht geladen werden.');} $('authBtn').textContent=session?'Abmelden':'Anmelden';$('logoutNav').style.display=session?'block':'none';}
-$('authBtn').onclick=async()=>{if(session){await supabase.auth.signOut();session=null;profile=null;await refresh();await refreshAuth();return}registerMode=false;updateAuthMode();modal('authModal',true)};
-function updateAuthMode(){$('authTitle').textContent=registerMode?'Snipz-Konto erstellen':'Bei Snipz anmelden';$('username').hidden=!registerMode;$('toggleAuth').textContent=registerMode?'Ich habe schon ein Konto':'Konto erstellen';$('authSubmit').textContent=registerMode?'Registrieren':'Anmelden'}
-$('toggleAuth').onclick=()=>{registerMode=!registerMode;updateAuthMode()};$('authClose').onclick=()=>modal('authModal',false);
-$('authSubmit').onclick=async()=>{if(needConfig())return;const email=$('email').value.trim(),password=$('password').value,username=$('username').value.trim().toLowerCase();if(!email||password.length<8){toast('Bitte E-Mail und Passwort (mind. 8 Zeichen) eingeben.');return}try{if(registerMode){if(!/^[a-z0-9_]{3,24}$/.test(username)){toast('Benutzername: 3–24 Zeichen, a-z, 0-9 oder _.');return}const {data,error}=await supabase.auth.signUp({email,password,options:{data:{username}}});if(error)throw error;if(!data.session){toast('Bestätige bitte den Link in deiner E-Mail.');modal('authModal',false);return}}else{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error}modal('authModal',false);await refreshAuth();await refresh();toast('Du bist angemeldet!')}catch(e){toast(e.message||'Anmeldung fehlgeschlagen.')}};
-function openUpload(){if(!session){toast('Bitte zuerst anmelden.');modal('authModal',true);return}modal('uploadModal',true)}
-['uploadBtn','sideUpload','rightUpload','mobileUpload'].forEach(id=>$(id).onclick=openUpload);$('uploadClose').onclick=()=>modal('uploadModal',false);
-$('publish').onclick=async()=>{const file=$('videoFile').files[0];if(!file||!file.type.startsWith('video/')){toast('Bitte eine Videodatei auswählen.');return}if(file.size>100*1024*1024){toast('Maximale Dateigröße: 100 MB.');return}const btn=$('publish');btn.disabled=true;btn.textContent='Lädt hoch …';try{const ext=(file.name.split('.').pop()||'mp4').toLowerCase().replace(/[^a-z0-9]/g,'');const path=session.user.id+'/'+crypto.randomUUID()+'.'+ext;const {error:upErr}=await supabase.storage.from('videos').upload(path,file,{contentType:file.type,upsert:false});if(upErr)throw upErr;const {error}=await supabase.from('videos').insert({user_id:session.user.id,storage_path:path,caption:$('videoCaption').value.trim(),visibility:'public'});if(error){await supabase.storage.from('videos').remove([path]);throw error}modal('uploadModal',false);$('videoFile').value='';$('videoCaption').value='';await refresh();toast('Dein Video ist jetzt veröffentlicht!')}catch(e){toast(e.message||'Upload fehlgeschlagen.')}finally{btn.disabled=false;btn.textContent='Veröffentlichen'}};
-feed.addEventListener('click',async e=>{const like=e.target.closest('[data-like]');const follow=e.target.closest('[data-follow]');const toggle=e.target.closest('[data-comment-toggle]');const report=e.target.closest('[data-report]');const deleteVideo=e.target.closest('[data-delete-video]');const loginComment=e.target.closest('[data-login-comment]');try{if(loginComment){registerMode=false;updateAuthMode();modal('authModal',true);return}if(like){if(!session){toast('Bitte anmelden, um zu liken.');return}const id=like.dataset.like;const {data}=await supabase.from('likes').select('video_id').eq('video_id',id).eq('user_id',session.user.id).maybeSingle();if(data){const {error}=await supabase.from('likes').delete().eq('video_id',id).eq('user_id',session.user.id);if(error)throw error}else{const {error}=await supabase.from('likes').insert({video_id:id,user_id:session.user.id});if(error)throw error}await refresh()}
-if(follow){if(!session){toast('Bitte anmelden, um zu folgen.');return}const id=follow.dataset.follow;if(id===session.user.id){toast('Das ist dein eigenes Profil.');return}if(following.has(id)){const {error}=await supabase.from('follows').delete().eq('follower_id',session.user.id).eq('following_id',id);if(error)throw error}else{const {error}=await supabase.from('follows').insert({follower_id:session.user.id,following_id:id});if(error)throw error}await refresh()}
-if(toggle){const box=$('comments-'+toggle.dataset.commentToggle);box.hidden=!box.hidden}
-if(deleteVideo){if(!session)return; if(!confirm('Dieses eigene Video wirklich löschen?'))return; const {data:video,error:readErr}=await supabase.from('videos').select('storage_path').eq('id',deleteVideo.dataset.deleteVideo).eq('user_id',session.user.id).single();if(readErr)throw readErr;const {error:storageErr}=await supabase.storage.from('videos').remove([video.storage_path]);if(storageErr)throw storageErr;const {error:deleteErr}=await supabase.from('videos').delete().eq('id',deleteVideo.dataset.deleteVideo).eq('user_id',session.user.id);if(deleteErr)throw deleteErr;await refresh();toast('Dein Video wurde gelöscht.')}if(report){if(!session){toast('Bitte anmelden, um Inhalte zu melden.');return}const reason=prompt('Warum möchtest du dieses Video melden? (Spam, Belästigung, Rechteverletzung, Sonstiges)');if(!reason)return;const {error}=await supabase.from('reports').insert({reporter_id:session.user.id,video_id:report.dataset.report,reason:reason.slice(0,500)});if(error)throw error;toast('Meldung wurde übermittelt. Danke!')}
-}catch(err){toast(err.message||'Aktion fehlgeschlagen.')}});
-feed.addEventListener('submit',async e=>{const form=e.target.closest('[data-comment-form]');if(!form)return;e.preventDefault();if(!session){toast('Bitte anmelden, um zu kommentieren.');return}const body=new FormData(form).get('body').trim();if(!body)return;const {error}=await supabase.from('comments').insert({video_id:form.dataset.commentForm,user_id:session.user.id,body});if(error){toast(error.message);return}await refresh();const box=$('comments-'+form.dataset.commentForm);if(box)box.hidden=false});
-$('search').addEventListener('input',()=>{clearTimeout(window.searchTimer);window.searchTimer=setTimeout(refresh,300)});
-$('profileNav').onclick=$('mobileProfile').onclick=async()=>{if(!session){toast('Bitte zuerst anmelden.');modal('authModal',true);return}await loadProfile();const [{count:videoCount},{count:followerCount},{count:followingCount}]=await Promise.all([supabase.from('videos').select('id',{count:'exact',head:true}).eq('user_id',session.user.id),supabase.from('follows').select('follower_id',{count:'exact',head:true}).eq('following_id',session.user.id),supabase.from('follows').select('following_id',{count:'exact',head:true}).eq('follower_id',session.user.id)]);$('accountStats').textContent=(videoCount||0)+' Videos · '+(followerCount||0)+' Follower · '+(followingCount||0)+' Gefolgt';$('newPassword').value='';$('profileUsername').value=profile.username||'';$('profileDisplay').value=profile.display_name||'';$('profileBio').value=profile.bio||'';modal('profileModal',true)};
-$('profileClose').onclick=()=>modal('profileModal',false);$('passwordSave').onclick=async()=>{const password=$('newPassword').value;if(password.length<8){toast('Bitte ein Passwort mit mindestens 8 Zeichen eingeben.');return}const {error}=await supabase.auth.updateUser({password});if(error){toast(error.message||'Passwort konnte nicht geändert werden.');return}$('newPassword').value='';toast('Passwort wurde aktualisiert.');};$('profileSave').onclick=async()=>{const username=$('profileUsername').value.trim().toLowerCase();if(!/^[a-z0-9_]{3,24}$/.test(username)){toast('Benutzername: 3–24 Zeichen, a-z, 0-9 oder _.');return}const {data,error}=await supabase.from('profiles').update({username,display_name:$('profileDisplay').value.trim(),bio:$('profileBio').value.trim()}).eq('id',session.user.id).select().single();if(error){toast(error.message);return}profile=data;modal('profileModal',false);await refresh();toast('Profil gespeichert!')};
-$('logoutNav').onclick=async()=>{await supabase.auth.signOut();session=null;profile=null;await refreshAuth();await refresh()};
-$('mobileSearch').onclick=()=>$('search').focus();
-if(supabase){supabase.auth.onAuthStateChange((_event,newSession)=>{session=newSession;setTimeout(async()=>{await refreshAuth();await refresh()},0)});await refreshAuth();await refresh()}else needConfig();
-</script></body></html>
+  <header class="top"><div class="logo">snipz</div><span class="pill">ÖFFENTLICHE DESIGN-VORSCHAU</span></header>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">DEIN MOMENT. DEIN SNIPZ.</div>
+      <h1>Willkommen bei <span style="color:#67bdff">Snipz</span></h1>
+      <p>Eine Vorschau auf eine neue Social-App-Idee – mit Stories, Chats und einem klaren, blauen Look.</p>
+      <span class="hero-mark">✨ Snipz Preview</span>
+    </section>
+    <div class="notice"><b>Wichtig:</b> Dies ist nur eine interaktive Design-Demo. Es gibt keine echten Konten, keine echten Nachrichten und keine Uploads. Alle Namen und Inhalte sind erfunden. Die Kamera wird von dieser Vorschau nicht eingeschaltet.</div>
+    <div class="section-title"><h2>Stories entdecken</h2><span class="muted">Beispiel-Inhalte</span></div>
+    <section class="stories" aria-label="Beispiel-Stories">
+      <button class="story" data-story="Café-Pause ☕|Ein kleiner Moment in der Sonne."><span class="story-top"><span class="avatar">M</span>Mila · Demo</span><strong>Café-Pause ☕</strong><small>Tippen zum Anschauen</small></button>
+      <button class="story" data-story="Abendhimmel 🌇|Die Farben des Himmels heute."><span class="story-top"><span class="avatar">N</span>Noah · Demo</span><strong>Abendhimmel 🌇</strong><small>Tippen zum Anschauen</small></button>
+      <button class="story" data-story="Kreativzeit 🎨|Ein bisschen Farbe für den Tag."><span class="story-top"><span class="avatar">L</span>Lea · Demo</span><strong>Kreativzeit 🎨</strong><small>Tippen zum Anschauen</small></button>
+      <button class="story" data-story="Musik an 🎧|Gute Laune für heute."><span class="story-top"><span class="avatar">E</span>Emil · Demo</span><strong>Musik an 🎧</strong><small>Tippen zum Anschauen</small></button>
+    </section>
+    <div class="section-title"><h2>So könnte Snipz aussehen</h2><span class="muted">Nur Beispieldaten</span></div>
+    <section class="grid">
+      <article class="card"><h3>💬 Chat-Vorschau</h3><p>Ein Beispiel, wie Unterhaltungen gestaltet sein könnten.</p><div class="mock-chat"><div class="bubble">Hey! Wie war dein Tag? 👋</div><div class="bubble right">Richtig gut! Und deiner?</div><div class="bubble">Auch super, danke! ✨</div></div></article>
+      <article class="card"><h3>📸 Kamera & Kreativität</h3><p>Ein späteres Studio könnte Filter, Sticker und Textideen enthalten.</p><div class="feature-list"><div class="feature"><b>🌈 Filter</b><span>Look auswählen</span></div><div class="feature"><b>✨ Sticker</b><span>Momente verzieren</span></div><div class="feature"><b>🔤 Text</b><span>Eigene Caption</span></div><div class="feature"><b>📖 Stories</b><span>Momente teilen</span></div></div></article>
+    </section>
+    <div class="section-title"><h2>Snipz-Bereiche</h2><span class="muted">Vorschau anklicken</span></div>
+    <section class="card demo-panel">
+      <div class="tabs" role="group" aria-label="Demo-Bereiche"><button class="tab" data-panel="stories" aria-pressed="true">Stories</button><button class="tab" data-panel="chat" aria-pressed="false">Chats</button><button class="tab" data-panel="safety" aria-pressed="false">Sicherheit</button></div>
+      <div id="panelText"><h3>📖 Stories</h3><p>Beispiel-Stories zeigen, wie Snipz-Momente dargestellt werden könnten. Sie werden nicht von echten Personen hochgeladen.</p></div>
+    </section>
+    <footer class="footer">Snipz ist ein unabhängiges Projekt in Entwicklung. Diese Seite ist eine Vorschau und kein fertiger Social-Media-Dienst.</footer>
+  </main>
+  <div class="modal" id="storyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-inner"><button id="closeStory">Schließen ✕</button><div><div class="eyebrow">SNIPZ STORY · DEMO</div><h2 id="modalTitle">Ein Moment ✨</h2><p id="modalCopy"></p></div><span class="pill">Nur Beispieldaten</span></div></div>
+  <script>
+    const modal=document.getElementById('storyModal');
+    document.querySelectorAll('[data-story]').forEach(button=>button.addEventListener('click',()=>{
+      const [title,copy]=button.dataset.story.split('|');
+      document.getElementById('modalTitle').textContent=title;
+      document.getElementById('modalCopy').textContent=copy;
+      modal.classList.add('open');
+      document.getElementById('closeStory').focus();
+    }));
+    function closeModal(){modal.classList.remove('open')}
+    document.getElementById('closeStory').addEventListener('click',closeModal);
+    modal.addEventListener('click',event=>{if(event.target===modal)closeModal()});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal()});
+    const panels={
+      stories:['📖 Stories','Beispiel-Stories zeigen, wie Snipz-Momente dargestellt werden könnten. Sie werden nicht von echten Personen hochgeladen.'],
+      chat:['💬 Chats','Hier siehst du nur vorbereitete Beispiel-Nachrichten. Es wird nichts gesendet oder gespeichert.'],
+      safety:['🛡️ Sicherheit','Vor echten Konten wären unter anderem Datenschutz, Meldefunktionen, Blockieren, Moderation und sichere Medienverwaltung nötig. Diese Vorschau stellt keine echten Schutzfunktionen bereit.']
+    };
+    document.querySelectorAll('[data-panel]').forEach(button=>button.addEventListener('click',()=>{
+      document.querySelectorAll('[data-panel]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+      const [title,copy]=panels[button.dataset.panel];
+      document.getElementById('panelText').innerHTML='<h3></h3><p></p>';
+      document.querySelector('#panelText h3').textContent=title;
+      document.querySelector('#panelText p').textContent=copy;
+    }));
+  </script>
+</body>
+</html>
