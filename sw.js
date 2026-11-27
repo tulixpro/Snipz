@@ -1,8 +1,8 @@
-const CACHE_NAME='snipz-shell-v3';
+const CACHE_NAME='snipz-shell-v4';
 const APP_SHELL=['./','./index.html','./offline.html','./manifest.webmanifest','./favicon.svg','./app-icon.svg','./config.js','./social.js','./social.css','./safety.js','./safety.css'];
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE_NAME);await Promise.all(APP_SHELL.map(async path=>{try{await cache.add(path)}catch(error){console.warn('Snipz cache skipped:',path,error)}}));await self.skipWaiting()})())});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith('snipz-shell-')&&key!==CACHE_NAME).map(key=>caches.delete(key)));await self.clients.claim()})())});
 self.addEventListener('fetch',event=>{const request=event.request;if(request.method!=='GET')return;const url=new URL(request.url);if(url.origin!==self.location.origin)return;
 if(request.mode==='navigate'){event.respondWith((async()=>{try{const response=await fetch(request);if(response.ok){const cache=await caches.open(CACHE_NAME);cache.put('./index.html',response.clone())}return response}catch(error){return (await caches.match(request))||(await caches.match('./index.html'))||(await caches.match('./offline.html'))}})());return}
-if(/\\.(?:js|css|svg|webmanifest)$/.test(url.pathname)){event.respondWith((async()=>{const cached=await caches.match(request);if(cached)return cached;try{const response=await fetch(request);if(response.ok){const cache=await caches.open(CACHE_NAME);cache.put(request,response.clone())}return response}catch(error){return cached||Response.error()}})())}
+if(/\.(?:js|css|svg|webmanifest)$/.test(url.pathname)){event.respondWith((async()=>{const cached=await caches.match(request);if(cached)return cached;try{const response=await fetch(request);if(response.ok){const cache=await caches.open(CACHE_NAME);cache.put(request,response.clone())}return response}catch(error){return cached||Response.error()}})())}
 });
