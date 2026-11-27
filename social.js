@@ -32,6 +32,12 @@
     <div id="snipzSocialContent"></div>
   `;
   main.insertBefore(view, main.firstChild);
+  const storyViewer=document.createElement('div');
+  storyViewer.id='snipzStoryViewer';
+  storyViewer.className='snipz-story-viewer';
+  storyViewer.hidden=true;
+  storyViewer.innerHTML='<div class="story-viewer-top"><div class="story-progress"><span id="snipzStoryProgress"></span></div><button type="button" id="snipzStoryClose" aria-label="Story schließen">×</button></div><div class="story-viewer-person" id="snipzStoryPerson"></div><div class="story-viewer-copy" id="snipzStoryCopy"></div><div class="story-viewer-bottom"><button type="button" id="snipzStoryPrev">‹</button><span>DEMO-STORY</span><button type="button" id="snipzStoryNext">›</button></div>';
+  view.appendChild(storyViewer);
   const content=$('snipzSocialContent');
   const nav=document.querySelector('.side');
   const socialNav=document.createElement('div');
@@ -58,8 +64,41 @@
     document.querySelectorAll('[data-open-social]').forEach(x=>x.classList.remove('active'));
   }
   function avatar(letter){return '<div class="social-avatar">'+letter+'</div>'}
+  const demoStoryCards={
+    mila:{title:'Kleiner Café-Stopp ☕',caption:'Heute mal eine Pause in der Sonne.',theme:'story-cafe'},
+    noah:{title:'Abendlicher Himmel 🌇',caption:'Der Himmel sah gerade einfach toll aus.',theme:'story-sunset'},
+    lea:{title:'Kreativzeit ✨',caption:'Ein bisschen Farbe für den Tag.',theme:'story-art'},
+    emil:{title:'Neuer Lieblingssong 🎧',caption:'Musik an und gute Laune.',theme:'story-music'}
+  };
+  let storyOrder=[];
+  let storyIndex=0;
+  function openStory(id){
+    storyOrder=demoFriends.filter(f=>friends.has(f.id)&&demoStoryCards[f.id]).map(f=>f.id);
+    storyIndex=Math.max(0,storyOrder.indexOf(id));
+    if(!storyOrder.length)return;
+    const viewer=$('snipzStoryViewer');
+    viewer.hidden=false;
+    viewer.setAttribute('aria-hidden','false');
+    document.body.classList.add('story-open');
+    renderStoryFrame();
+  }
+  function closeStory(){
+    const viewer=$('snipzStoryViewer');
+    viewer.hidden=true;
+    viewer.setAttribute('aria-hidden','true');
+    document.body.classList.remove('story-open');
+  }
+  function renderStoryFrame(){
+    const id=storyOrder[storyIndex],person=demoFriends.find(f=>f.id===id),story=demoStoryCards[id];
+    if(!person||!story)return;
+    $('snipzStoryPerson').innerHTML=avatar(person.letter)+'<span><b>'+person.name+'</b><small>'+person.handle+' · Demo-Story</small></span>';
+    $('snipzStoryCopy').innerHTML='<div class="story-scene '+story.theme+'"><span>'+story.title+'</span><p>'+story.caption+'</p></div>';
+    $('snipzStoryProgress').style.width=((storyIndex+1)/storyOrder.length*100)+'%';
+    $('snipzStoryPrev').disabled=storyIndex===0;
+    $('snipzStoryNext').textContent=storyIndex===storyOrder.length-1?'✓':'›';
+  }
   function renderStories(){
-    $('snipzStories').innerHTML='<button class="story" data-tab="camera"><div class="story-ring"><span>＋</span></div><small>Deine Story</small></button>'+demoFriends.filter(f=>friends.has(f.id)).map(f=>'<button class="story" data-story="'+f.id+'"><div class="story-ring"><span>'+f.letter+'</span></div><small>'+f.name+'</small></button>').join('');
+    $('snipzStories').innerHTML='<button class="story" data-tab="camera"><div class="story-ring your-story"><span>＋</span></div><small>Deine Story</small></button>'+demoFriends.filter(f=>friends.has(f.id)).map(f=>'<button class="story" data-story="'+f.id+'"><div class="story-ring"><span>'+f.letter+'</span></div><small>'+f.name+'</small></button>').join('');
   }
   function renderFriends(){
     content.innerHTML='<div class="social-grid"><div class="social-card"><h3>Deine Freunde · '+friends.size+'</h3>'+demoFriends.filter(f=>friends.has(f.id)).map(f=>'<div class="friend-row">'+avatar(f.letter)+'<div class="social-grow"><b>'+f.name+'</b><small>'+f.handle+' · '+f.status+'</small></div><button class="social-action" data-chat="'+f.id+'">Chat</button></div>').join('')+'</div><div class="social-card"><h3>Freundschaftsanfragen</h3>'+(requests.length?requests.map(f=>'<div class="friend-row">'+avatar(f.letter)+'<div class="social-grow"><b>'+f.name+'</b><small>'+f.handle+'</small></div><button class="social-action primary-action" data-accept="'+f.id+'">Annehmen</button></div>').join(''):'<div class="social-empty">Keine neuen Anfragen</div>')+'<h3 style="margin-top:18px">Freunde entdecken</h3>'+demoFriends.filter(f=>!friends.has(f.id)&&!requests.some(r=>r.id===f.id)).map(f=>'<div class="friend-row">'+avatar(f.letter)+'<div class="social-grow"><b>'+f.name+'</b><small>'+f.handle+'</small></div><button class="social-action" data-add="'+f.id+'">Hinzufügen</button></div>').join('')+'</div></div><p class="social-note">Dies ist eine Vorschau mit erfundenen Profilen. Echte Kontakte und Anfragen kommen später mit dem Server.</p>';
@@ -87,6 +126,10 @@
   function render(){renderStories();if(activeTab==='friends')renderFriends();if(activeTab==='chats')renderChats();if(activeTab==='snaps')renderSnaps();if(activeTab==='camera')renderCamera();}
   document.addEventListener('click',async e=>{
     const open=e.target.closest('[data-open-social]');if(open){showSocial(open.dataset.openSocial);return;}
+    if(e.target.closest('#snipzStoryClose')){closeStory();return;}
+    if(e.target.closest('#snipzStoryPrev')){if(storyIndex>0){storyIndex--;renderStoryFrame()}return;}
+    if(e.target.closest('#snipzStoryNext')){if(storyIndex<storyOrder.length-1){storyIndex++;renderStoryFrame()}else closeStory();return;}
+    const storyButton=e.target.closest('[data-story]');if(storyButton){openStory(storyButton.dataset.story);return;}
     const tab=e.target.closest('[data-tab]');if(tab){if(tab.dataset.tab==='camera'||['friends','chats','snaps'].includes(tab.dataset.tab)){showSocial(tab.dataset.tab);return}}
     const add=e.target.closest('[data-add]');if(add){const f=demoFriends.find(x=>x.id===add.dataset.add);if(f){requests.push(f);render()}return}
     const accept=e.target.closest('[data-accept]');if(accept){friends.add(accept.dataset.accept);requests=requests.filter(x=>x.id!==accept.dataset.accept);render();return}
@@ -104,5 +147,6 @@
   const homeMobile=document.querySelector('.mobile button:first-child');if(homeMobile)homeMobile.addEventListener('click',showFeed);
   // Release camera tracks when leaving the camera tab.
   document.addEventListener('click',e=>{if(!e.target.closest('[data-open-social="camera"],[data-tab="camera"]')&&cameraStream&&activeTab==='camera'){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}});
+  window.addEventListener('keydown',e=>{if($('snipzStoryViewer')&&!$('snipzStoryViewer').hidden){if(e.key==='Escape')closeStory();if(e.key==='ArrowRight')$('snipzStoryNext').click();if(e.key==='ArrowLeft')$('snipzStoryPrev').click();}});
   window.addEventListener('pagehide',()=>{if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}});\n  document.addEventListener('visibilitychange',()=>{if(document.hidden&&cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}});\n  showSocial('friends');showFeed();
 })();
