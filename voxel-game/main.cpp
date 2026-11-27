@@ -44,7 +44,7 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 static Texture2D CreateBlockAtlas() {
     // Clean, original voxel pixel-art tiles: broad color patches, not noisy per-pixel grain.
     Image image=GenImageColor(192,64,WHITE);
-    const Color bases[9]={
+    const Color bases[11]={
         {95,166,65,255},{134,96,62,255},{126,130,136,255},{194,174,104,255},
         {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255},
         {112,76,45,255},{232,91,137,255}
@@ -254,6 +254,7 @@ int main() {
     float messageTime=4.0f;
     int menuFPS = fpsLimit;
     int activeGamepad=-1;
+    bool previousPadMine=false, previousPadPlace=false;
 
     Camera3D camera={};
     camera.position={worldSize/2.0f,12.0f,worldSize/2.0f+18};
@@ -301,7 +302,7 @@ int main() {
         else if (s.rfind("/give ",0)==0) {
             int v=atoi(s.substr(6).c_str());
             if (v>=1 && v<=paletteCount) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
-            else message="Usage: /give 1-9";
+            else message="Usage: /give 1-11";
         } else message="Unknown command. Type /help.";
         command[0]='\0'; commandOpen=false; messageTime=4.0f;
     };
@@ -477,16 +478,27 @@ int main() {
                 if(IsKeyPressed(KEY_EIGHT)) selected=7;
                 if(IsKeyPressed(KEY_NINE)) selected=8;
                 if(IsKeyPressed(KEY_ZERO)) selected=9;
+                float wheel=GetMouseWheelMove();
+                if(wheel>0.0f) selected=(selected+paletteCount-1)%paletteCount;
+                else if(wheel<0.0f) selected=(selected+1)%paletteCount;
 
-                bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_2));
-            bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_2));
+                bool padMine=false, padPlace=false;
+                if(activeGamepad>=0) {
+                    float rt=GetGamepadAxisMovement(activeGamepad,GAMEPAD_AXIS_RIGHT_TRIGGER);
+                    float lt=GetGamepadAxisMovement(activeGamepad,GAMEPAD_AXIS_LEFT_TRIGGER);
+                    padMine=IsGamepadButtonDown(activeGamepad,GAMEPAD_BUTTON_RIGHT_TRIGGER_2) || rt>0.35f;
+                    padPlace=IsGamepadButtonDown(activeGamepad,GAMEPAD_BUTTON_LEFT_TRIGGER_2) || lt>0.35f;
+                }
+                bool minePressed=IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || (padMine && !previousPadMine);
+                bool placePressed=IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || (padPlace && !previousPadPlace);
+                previousPadMine=padMine; previousPadPlace=padPlace;
             if(minePressed || placePressed) {
                     Ray ray=GetMouseRay({GetScreenWidth()/2.0f,GetScreenHeight()/2.0f},camera);
                     int hit=-1; float nearest=1000.0f; Vector3 normal={0,0,0};
                     for(int i=0;i<(int)blocks.size();++i) {
                         BoundingBox box={{blocks[i].p.x-.5f,blocks[i].p.y-.5f,blocks[i].p.z-.5f},{blocks[i].p.x+.5f,blocks[i].p.y+.5f,blocks[i].p.z+.5f}};
                         RayCollision c=GetRayCollisionBox(ray,box);
-                        if(c.hit && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
+                        if(c.hit && c.distance<=8.0f && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
                     }
                     if(hit>=0 && minePressed) { blocks.erase(blocks.begin()+hit); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     else if(hit>=0 && placePressed) {
@@ -548,7 +560,7 @@ int main() {
                 DrawRectangle(x+8,hotY+6,38,25,palette[i]);
                 DrawText(TextFormat("%d",i+1),x+22,hotY+33,12,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | B EAT | RT MINE | LT PLACE":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | LMB MINE | RMB PLACE | Q EAT | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | LMB MINE | RMB PLACE | WHEEL BLOCK | E INVENTORY",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
