@@ -195,28 +195,44 @@ int main() {
         ClearBackground(sky);
         if(!creatorOpen) {
             BeginMode3D(camera);
+            // Simple celestial landmark gives the world a stronger sense of scale.
+            DrawSphere(night?Vector3{worldSize*0.78f,22.0f,worldSize*0.18f}:Vector3{worldSize*0.18f,25.0f,worldSize*0.22f},
+                       2.2f,night?Color{220,226,245,255}:Color{255,224,142,255});
             DrawPlane({worldSize/2.0f,-.55f,worldSize/2.0f},{(float)worldSize+4,(float)worldSize+4},night?Color{30,55,45,255}:Color{70,130,75,255});
             for(const auto& b:blocks) DrawCube(b.p,1,1,1,b.c);
             EndMode3D();
 
-            DrawRectangle(14,14,230,72,Fade(BLACK,.38f));
-            DrawText("BLOCKLANDS",26,22,25,RAYWHITE);
-            DrawFPS(27,54);
-            DrawText(TextFormat("%s | %s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL"),260,24,18,RAYWHITE);
-            DrawText(TextFormat("Seed: %d",seed),260,49,16,RAYWHITE);
-            DrawRectangle(GetScreenWidth()/2-1,GetScreenHeight()/2-10,2,20,WHITE);
-            DrawRectangle(GetScreenWidth()/2-10,GetScreenHeight()/2-1,20,2,WHITE);
+            DrawRectangleRounded({14,14,250,78},0.12f,8,Fade(Color{8,14,26,255},0.82f));
+            DrawText("BLOCKLANDS",28,22,25,RAYWHITE);
+            DrawFPS(29,55);
+            DrawText(TextFormat("%s  /  %s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL"),286,24,18,RAYWHITE);
+            DrawText(TextFormat("SEED  %d",seed),286,50,15,Fade(WHITE,.82f));
 
-            int barW=paletteCount*68, start=(GetScreenWidth()-barW)/2;
-            DrawRectangle(start-8,GetScreenHeight()-88,barW+16,70,Fade(BLACK,.55f));
+            DrawRectangleRounded({(float)GetScreenWidth()-210,14,196,64},0.14f,8,Fade(Color{8,14,26,255},.78f));
+            DrawText(night?"NIGHT MODE":"DAY MODE",GetScreenWidth()-192,24,16,night?SKYBLUE:GOLD);
+            DrawText("F1  HELP     F2  WORLDS",GetScreenWidth()-192,48,12,Fade(WHITE,.85f));
+
+            // Cleaner outlined crosshair.
+            int cx=GetScreenWidth()/2, cy=GetScreenHeight()/2;
+            DrawCircleLines(cx,cy,8,Fade(BLACK,.8f));
+            DrawLine(cx-13,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+13,cy,WHITE);
+            DrawLine(cx,cy-13,cx,cy-4,WHITE); DrawLine(cx,cy+4,cx,cy+13,WHITE);
+
+            int barW=paletteCount*68, start=(GetScreenWidth()-barW)/2, hotY=GetScreenHeight()-82;
+            DrawRectangleRounded({(float)start-12,(float)hotY-8,(float)barW+24,72},0.12f,8,Fade(Color{8,14,26,255},.86f));
             for(int i=0;i<paletteCount;i++) {
                 int x=start+i*68;
-                DrawRectangle(x,GetScreenHeight()-78,58,48,palette[i]);
-                DrawRectangleLines(x,GetScreenHeight()-78,58,48,i==selected?YELLOW:Fade(WHITE,.55f));
-                DrawText(TextFormat("%d",i+1),x+23,GetScreenHeight()-72,14,BLACK);
+                if(i==selected) {
+                    DrawRectangleRounded({(float)x-3,(float)hotY-4,64,62},0.12f,8,Color{255,205,80,255});
+                    DrawRectangleRounded({(float)x,(float)hotY-1,58,56},0.10f,8,Color{32,39,54,255});
+                } else DrawRectangleRounded({(float)x,(float)hotY,58,54},0.10f,8,Fade(Color{45,55,72,255},.92f));
+                DrawRectangle(x+7,hotY+7,44,28,palette[i]);
+                DrawRectangleLines(x+7,hotY+7,44,28,Fade(WHITE,.55f));
+                DrawText(TextFormat("%d",i+1),x+8,hotY+39,12,i==selected?GOLD:LIGHTGRAY);
+                DrawText(blockNames[i],x+22,hotY+39,10,i==selected?WHITE:LIGHTGRAY);
             }
-            DrawText("WASD move  |  Mouse look  |  Space jump  |  LMB mine  |  RMB place",18,GetScreenHeight()-112,17,RAYWHITE);
-            DrawText("T Commands  |  F2 World Creator  |  F1 Help",18,GetScreenHeight()-24,16,RAYWHITE);
+            DrawText("WASD MOVE   MOUSE LOOK   SPACE JUMP   LMB MINE   RMB PLACE",18,GetScreenHeight()-112,14,Fade(WHITE,.9f));
+            DrawText("T COMMANDS   F2 WORLDS   F1 HELP",18,GetScreenHeight()-24,14,Fade(WHITE,.75f));
         }
 
         if(commandOpen) {
