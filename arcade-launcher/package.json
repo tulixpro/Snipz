@@ -1,0 +1,28 @@
+{
+  "name": "retrovault-launcher",
+  "version": "0.1.0",
+  "description": "RetroVault – eine kuratierte Bibliothek offizieller PC-Spiel-Downloads",
+  "main": "main.cjs",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "de.retrovault.launcher",
+    "productName": "RetroVault",
+    "directories": { "output": "dist" },
+    "files": ["index.html", "style.css", "renderer.js", "main.cjs"],
+    "win": { "target": ["nsis"] },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
