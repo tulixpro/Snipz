@@ -19,8 +19,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item voxel-game/build/Release/Blocklands.exe dist/
-          Copy-Item voxel-game/build/Release/BlocklandsLauncher.exe dist/
-          @("BLOCKLANDS", "Start BlocklandsLauncher.exe.", "Keep both EXE files in the same folder.", "This build is unsigned; SmartScreen may show a reputation warning.", "The game does not require administrator privileges.") | Set-Content dist/README.txt
+          @("BLOCKLANDS", "Start Blocklands.exe directly.", "This build uses raylib's OpenGL 2.1 backend for older GPU/driver compatibility.", "This build is unsigned; SmartScreen may show a reputation warning.", "The game does not require administrator privileges.") | Set-Content dist/README.txt
       - name: Microsoft Defender scan
         shell: pwsh
         run: |
@@ -37,7 +36,7 @@ jobs:
           Get-ChildItem dist -File | Get-FileHash -Algorithm SHA256 | ForEach-Object {
             "$($_.Hash)  $($_.Path | Split-Path -Leaf)"
           } | Set-Content dist/SHA256SUMS.txt
-      - name: Upload Windows game and launcher
+      - name: Upload Windows game
         uses: actions/upload-artifact@v4
         with:
           name: Blocklands-Windows-x64
