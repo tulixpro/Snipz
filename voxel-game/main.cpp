@@ -251,7 +251,7 @@ int main() {
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
             if(IsKeyPressed(KEY_E) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
         }
-        if (screen==PLAYING && inventoryOpen) {
+        else if (screen==PLAYING && inventoryOpen) {
             if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
             if((activeGamepad>=0)) {
                 if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_LEFT)) inventoryCursor=std::max(0,inventoryCursor-1);
