@@ -746,19 +746,14 @@ int main() {
                         camera.position.y=bottom+0.30f; velocity.y=0.0f;
                     }
                 }
-                int gx=(int)std::lround(camera.position.x);
-                int gz=(int)std::lround(camera.position.z);
-                bool insideWorld=gx>=0 && gx<worldSize && gz>=0 && gz<worldSize;
-                int safeHeight=(insideWorld && !groundHeights.empty() && groundHeights[gx*worldSize+gz]>0)?groundHeights[gx*worldSize+gz]:-1000;
-                float floorY=(float)safeHeight+1.65f;
-                if(!blockLanded && insideWorld && camera.position.y<floorY) {
-                    if(!creative && !wasOnGround && velocity.y < -11.0f) {
-                        int impact=(int)std::floor((-velocity.y-10.0f)*0.75f);
-                        health=std::max(0,health-impact);
-                        message=TextFormat("Fall damage! -%d HP",impact);
-                        messageTime=2.5f;
-                    }
-                    camera.position.y=floorY; velocity.y=0; onGround=true;
+                // Do not clamp the player to the surface height map: caves and mined tunnels
+                // can be far below that surface. Actual block-top collisions above handle floors.
+                // Keep fall damage tied to real block landings rather than the surface map.
+                if(blockLanded && !creative && !wasOnGround && velocity.y < -11.0f) {
+                    int impact=(int)std::floor((-velocity.y-10.0f)*0.75f);
+                    health=std::max(0,health-impact);
+                    message=TextFormat("Fall damage! -%d HP",impact);
+                    messageTime=2.5f;
                 }
                 if(!creative) {
                     hungerTimer+=dt;
