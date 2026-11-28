@@ -66,19 +66,21 @@ static void updateCars(float dt){
 static void simulateMonth(){
  int homes=0,shops=0,factories=0,parks=0,plants=0,towers=0,roads=0;
  for(int x=0;x<N;x++)for(int z=0;z<N;z++){Tile &t=city[x][z];if(t.tool==ZONE_RES)homes++;if(t.tool==ZONE_COM)shops++;if(t.tool==ZONE_IND)factories++;if(t.tool==PARK)parks++;if(t.tool==POWER)plants++;if(t.tool==WATER)towers++;if(t.tool==ROAD)roads++;}
- electricity=plants*18;waterSupply=towers*16;
+ int powerCapacity=plants*18,waterCapacity=towers*16,powerUsed=0,waterUsed=0;
  int connected=0,activeHomes=0,activeShops=0,activeFactories=0,workplaces=0;
  for(int x=0;x<N;x++)for(int z=0;z<N;z++){Tile&t=city[x][z];if(t.tool!=ZONE_RES&&t.tool!=ZONE_COM&&t.tool!=ZONE_IND)continue;
   bool road=roadAccess(x,z),power=nearbyCount(x,z,POWER,9)>0,water=nearbyCount(x,z,WATER,8)>0;
   if(road)connected++;
-  bool serviced=road&&power&&water;
+  bool serviced=road&&power&&water&&powerUsed<powerCapacity&&waterUsed<waterCapacity;
   if(!serviced)continue;
+  powerUsed++;waterUsed++;
   if(t.tool==ZONE_RES){activeHomes++;if(t.level<5&&money>1500&&GetRandomValue(0,100)<(int)(demandR*22)){t.level++;money-=260;}}
   if(t.tool==ZONE_COM){activeShops++;workplaces+=t.level+1;if(t.level<5&&GetRandomValue(0,100)<(int)(demandC*18)){t.level++;money-=330;}}
   if(t.tool==ZONE_IND){activeFactories++;workplaces+=2+t.level;if(t.level<4&&GetRandomValue(0,100)<(int)(demandI*18)){t.level++;money-=290;}}
  }
  population=activeHomes*5+activeShops*2; jobs=workplaces;
- connectedZones=connected;
+ connectedZones=connected;servedHomes=activeHomes;servedShops=activeShops;servedFactories=activeFactories;
+ electricity=powerCapacity-powerUsed;waterSupply=waterCapacity-waterUsed;
  int servicePenalty=(homes-activeHomes)*2+(shops-activeShops)*2+(factories-activeFactories)*2;
  happiness=Clamp(55+parks*3+std::min(12,roads/8)+std::min(10,plants+towers)-factories/4-servicePenalty,5,99);
  money+=population*3+activeShops*55+activeFactories*38-parks*24-plants*120-towers*85-roads*2;
