@@ -58,14 +58,16 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 
 static Texture2D CreateBlockAtlas() {
     // Clean, original voxel pixel-art tiles: broad color patches, not noisy per-pixel grain.
-    Image image=GenImageColor(256,64,WHITE);
-    const Color bases[16]={
+    Image image=GenImageColor(256,96,WHITE);
+    const Color bases[24]={
         {95,166,65,255},{134,96,62,255},{126,130,136,255},{194,174,104,255},
         {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255},
         {112,76,45,255},{232,91,137,255},{145,93,54,255},
-        {42,43,47,255},{190,132,91,255},{238,190,55,255},{70,205,220,255}
+        {42,43,47,255},{190,132,91,255},{238,190,55,255},{70,205,220,255},
+        {126,94,58,255},{116,77,43,255},{150,125,83,255},{94,111,66,255},
+        {112,86,57,255},{126,95,60,255},{139,108,70,255},{96,73,49,255}
     };
-    for(int type=0;type<16;type++) {
+    for(int type=0;type<24;type++) {
         int ox=(type%8)*32, oy=(type/8)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             int gx=x/4, gy=y/4;
@@ -117,6 +119,16 @@ static Texture2D CreateBlockAtlas() {
                 if(x<3 || x>28 || y<3 || y>28) shade=0.55f;
                 else if((x/5+y/5)%2==0) shade=1.18f;
                 if(y<8 && (x%8==0)) shade=0.62f;
+            } else if(type==16) {
+                // Grass side: a crisp green turf cap above a dirt face, like classic voxel blocks.
+                if(y<7) { p=Color{91,158,54,255}; if(n>0.72f) shade=1.15f; }
+                else { p=Color{126,91,57,255}; shade=0.84f+n*0.28f; }
+                if(y>=7 && ((gx*5+gy*3)%11)==0) shade=0.62f;
+            } else if(type==17) {
+                // Log end grain with visible square-ish growth rings.
+                int dx=x-15, dy=y-15; int ring=(int)(sqrtf((float)(dx*dx+dy*dy))/4.0f);
+                shade=(ring%2==0)?1.16f:0.78f;
+                if(x<3||x>28||y<3||y>28) shade*=0.72f;
             } else if(type>=12) {
                 shade=0.70f+n*0.20f;
                 if(((gx*7+gy*11+type*3)%13)==0) shade=1.75f;
@@ -153,7 +165,7 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
         Vector3 p[6]={a,b,c,a,c,d};
         int tile=32;
         float u0=((type%8)*tile+0.5f)/256.0f, u1=((type%8)*tile+31.5f)/256.0f;
-        float v0=((type/8)*tile+0.5f)/64.0f, v1=((type/8)*tile+31.5f)/64.0f;
+        float v0=((type/8)*tile+0.5f)/96.0f, v1=((type/8)*tile+31.5f)/96.0f;
         const float uv[12]={u0,v0,u0,v1,u1,v1,u0,v0,u1,v1,u1,v0};
         for(int i=0;i<6;i++) {
             const auto& v=p[i];
@@ -170,12 +182,14 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
         int blockType=0;
         for(int t=0;t<paletteCount;t++) if(block.c.r==palette[t].r && block.c.g==palette[t].g && block.c.b==palette[t].b) { blockType=t; break; }
         auto shade=[](Color c,float f){ return Color{(unsigned char)(c.r*f),(unsigned char)(c.g*f),(unsigned char)(c.b*f),c.a}; };
-        if(!has(x,y+1,z)) face({0,1,0},{x0,y1,z0},{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},shade(WHITE,1.12f),blockType);
-        if(!has(x,y-1,z)) face({0,-1,0},{x0,y0,z1},{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},shade(WHITE,.55f),blockType);
-        if(!has(x-1,y,z)) face({-1,0,0},{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y1,z0},shade(WHITE,.78f),blockType);
-        if(!has(x+1,y,z)) face({1,0,0},{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y1,z1},shade(WHITE,.86f),blockType);
-        if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},shade(WHITE,.72f),blockType);
-        if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},shade(WHITE,.92f),blockType);
+        int topTile=(blockType==9)?17:blockType;
+        int sideTile=(blockType==0)?16:blockType;
+        if(!has(x,y+1,z)) face({0,1,0},{x0,y1,z0},{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},shade(WHITE,1.12f),topTile);
+        if(!has(x,y-1,z)) face({0,-1,0},{x0,y0,z1},{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},shade(WHITE,.55f),topTile);
+        if(!has(x-1,y,z)) face({-1,0,0},{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y1,z0},shade(WHITE,.78f),sideTile);
+        if(!has(x+1,y,z)) face({1,0,0},{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y1,z1},shade(WHITE,.86f),sideTile);
+        if(!has(x,y,z-1)) face({0,0,-1},{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y1,z0},shade(WHITE,.72f),sideTile);
+        if(!has(x,y,z+1)) face({0,0,1},{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y1,z1},shade(WHITE,.92f),sideTile);
     }
     Mesh mesh={};
     mesh.vertexCount=(int)(vertices.size()/3);
