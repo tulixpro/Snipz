@@ -43,3 +43,5 @@ jobs:
           path: dist/
 
 # Rebuild trigger: survival stacks and crafting table
+
+# Rebuild trigger: caves and dynamic day-night cycle
