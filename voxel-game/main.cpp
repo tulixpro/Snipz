@@ -555,7 +555,7 @@ int main() {
     int menuFocus=0, menuItemCounter=0;
     auto button = [&](Rectangle r, const char* label, bool hot=false) {
         int item=menuItemCounter++;
-        int totalItems=screen==MAIN_MENU?4:(screen==PAUSED?4:(screen==WORLD_MENU?7:7));
+        int totalItems=screen==MAIN_MENU?4:(screen==PAUSED?5:(screen==WORLD_MENU?7:7));
         if((activeGamepad>=0) && item==0) {
             if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN) || IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) menuFocus=(menuFocus+1)%totalItems;
             if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_UP) || IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP)) menuFocus=(menuFocus-1+totalItems)%totalItems;
@@ -1081,6 +1081,15 @@ int main() {
                 if(button({cx-155,283,310,52},"NEW WORLD")) { saveCurrentWorld(); screen=WORLD_MENU; }
                 if(button({cx-155,347,310,52},"SETTINGS")) { settingsReturn=PAUSED; screen=SETTINGS; }
                 if(button({cx-155,411,310,52},"MAIN MENU")) { saveCurrentWorld(); screen=MAIN_MENU; EnableCursor(); }
+                if(button({cx-155,475,310,52},creative?"SWITCH TO SURVIVAL":"SWITCH TO CREATIVE",true)) {
+                    creative=!creative;
+                    creativeFlying=false;
+                    velocity.y=0.0f;
+                    if(!creative) { health=20; hunger=20; stamina=100.0f; foodCount=5; }
+                    saveCurrentWorld();
+                    message=creative?"Creative mode enabled. Press V to fly.":"Survival mode enabled.";
+                    messageTime=3.0f;
+                }
             } else if(screen==WORLD_MENU) {
                 DrawText("PLAY  /  WORLD SELECT",(int)cx-205,100,30,WHITE);
                 DrawText("Build a custom world or let Blocklands surprise you.",(int)cx-225,137,16,LIGHTGRAY);
