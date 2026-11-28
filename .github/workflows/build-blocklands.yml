@@ -57,3 +57,5 @@ jobs:
 # Rebuild for cave zombies, combat and heart HUD
 
 # Rebuild after performance optimization pass
+
+# Rebuild after solid block collision and village NPC update.
