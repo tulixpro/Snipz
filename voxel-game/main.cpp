@@ -458,7 +458,8 @@ int main() {
     bool onGround=false;
     struct ChunkRender { int x; int z; Model model; };
     std::vector<ChunkRender> renderChunks;
-    const int RENDER_DISTANCE_CHUNKS=2;
+    // Adaptive render radius: keep older GPUs light while High quality shows more terrain.
+    const int RENDER_DISTANCE_CHUNKS=(graphicsQuality==0?2:(graphicsQuality==1?3:4));
     auto clearChunks = [&]() {
         for(auto& chunk:renderChunks) if(chunk.model.meshCount>0) UnloadModel(chunk.model);
         renderChunks.clear();
@@ -1101,7 +1102,6 @@ int main() {
                 DrawRectangle(28,174,(int)(230.0f*hunger/20.0f),8,Color{215,151,60,255});
                 DrawText(TextFormat("STAMINA  %d%%", (int)stamina),28,187,11,SKYBLUE);
             }
-            DrawText(TextFormat("WORLD %d x %d  |  SEED %d",worldSize,worldSize,seed),286,50,14,Fade(WHITE,.85f));
             DrawRectangleRounded({(float)GetScreenWidth()-210,14,196,64},.14f,8,Fade(Color{8,14,26,255},.8f));
             DrawText(TextFormat("%s  %02d:%02d",night?"NIGHT":"DAY",(int)(dayTime*24.0f),(int)(fmodf(dayTime*1440.0f,60.0f))),GetScreenWidth()-190,24,18,night?SKYBLUE:GOLD);
             DrawText("ESC  PAUSE",GetScreenWidth()-190,49,14,WHITE);
