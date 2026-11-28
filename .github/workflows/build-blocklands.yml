@@ -51,3 +51,5 @@ jobs:
 # Rebuild trigger: refined voxel atlas and progressive mining stages
 # Rebuild after procedural villages and expanded world update.
 # Rebuild after larger terrain and wandering animal update.
+
+# Rebuild for expanded cave generation
