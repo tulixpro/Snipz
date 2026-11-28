@@ -138,6 +138,10 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     auto has=[&](int x,int y,int z){ return x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y&&solid[index(x,y,z)]!=0; };
     std::vector<float> vertices, normals, texcoords;
     std::vector<unsigned char> colors;
+    // Reserve a conservative amount up front to reduce allocator churn while meshing.
+    size_t estimate=blocks.size();
+    vertices.reserve(estimate*30); normals.reserve(estimate*30);
+    texcoords.reserve(estimate*12); colors.reserve(estimate*24);
     auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color, int type) {
         Vector3 p[6]={a,b,c,a,c,d};
         int tile=32;
@@ -360,7 +364,7 @@ static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int&
 }
 
 int main() {
-    int W=1280, H=720, fpsLimit=120, fullscreen=0, graphicsQuality=1, fov=75, mouseSensitivity=25, controllerSensitivity=24;
+    int W=960, H=540, fpsLimit=60, fullscreen=0, graphicsQuality=0, fov=75, mouseSensitivity=25, controllerSensitivity=24;
     {
         std::ifstream cfg("settings.ini");
         std::string line;
@@ -390,7 +394,7 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=192, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     int blockCounts[12]={0};
     std::unordered_map<long long,int> blockLookup;
     auto blockKey=[&](int x,int y,int z)->long long { return ((long long)y*worldSize+(long long)z)*worldSize+(long long)x; };
@@ -786,7 +790,6 @@ int main() {
                         if(miningTimer>=miningDuration) {
                             if(!creative) { for(int bt=0;bt<paletteCount;bt++) if(blocks[hit].c.r==palette[bt].r && blocks[hit].c.g==palette[bt].g && blocks[hit].c.b==palette[bt].b) { blockCounts[bt]++; break; } }
                             blocks.erase(blocks.begin()+hit);
-                            rebuildBlockLookup();
                             miningTarget=-1; miningTimer=0.0f;
                             RebuildHeightMap(blocks,worldSize,groundHeights);
                             if(worldModelReady) UnloadModel(worldModel);
@@ -798,8 +801,8 @@ int main() {
                     else if(hit>=0 && placePressed) {
                         miningTarget=-1; miningTimer=0.0f;
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
-                        bool occupied=false;
-                        for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
+                        int px=(int)std::lround(p.x), py=(int)std::lround(p.y), pz=(int)std::lround(p.z);
+                        bool occupied=blockLookup.find(blockKey(px,py,pz))!=blockLookup.end();
                 rebuildBlockLookup();
                         if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); rebuildBlockLookup(); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     }
