@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
+#include <unordered_set>
 
 struct Block { Vector3 p; Color c; };
 struct Animal { Vector3 p; Vector3 dir; float turnTimer; int type; };
@@ -146,15 +147,16 @@ static Texture2D CreateBlockAtlas() {
     return texture;
 }
 
-static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
+static Model BuildWorldModel(const std::vector<Block>& blocks, int size, int chunkX=-1, int chunkZ=-1, int chunkSize=16) {
     constexpr int MAX_Y=128;
-    std::vector<unsigned char> solid(size*size*MAX_Y,0);
-    auto index=[&](int x,int y,int z){ return (y*size+z)*size+x; };
+    std::unordered_set<long long> solid;
+    solid.reserve(blocks.size()*2+1);
+    auto voxelKey=[&](int x,int y,int z)->long long { return ((long long)y*size+(long long)z)*size+(long long)x; };
     for(const auto& block:blocks) {
         int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
-        if(x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y) solid[index(x,y,z)]=1;
+        if(x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y) solid.insert(voxelKey(x,y,z));
     }
-    auto has=[&](int x,int y,int z){ return x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y&&solid[index(x,y,z)]!=0; };
+    auto has=[&](int x,int y,int z){ return x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y&&solid.find(voxelKey(x,y,z))!=solid.end(); };
     std::vector<float> vertices, normals, texcoords;
     std::vector<unsigned char> colors;
     // Reserve a conservative amount up front to reduce allocator churn while meshing.
@@ -178,6 +180,7 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     for(const auto& block:blocks) {
         int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
         if(x<0||x>=size||z<0||z>=size||y<0||y>=MAX_Y) continue;
+        if(chunkX>=0 && (x/chunkSize!=chunkX || z/chunkSize!=chunkZ)) continue;
         float x0=x-.5f,x1=x+.5f,y0=y-.5f,y1=y+.5f,z0=z-.5f,z1=z+.5f;
         int blockType=0;
         for(int t=0;t<paletteCount;t++) if(block.c.r==palette[t].r && block.c.g==palette[t].g && block.c.b==palette[t].b) { blockType=t; break; }
@@ -420,9 +423,7 @@ int main() {
     Screen settingsReturn = MAIN_MENU;
     std::vector<Block> blocks;
     std::vector<int> groundHeights;
-    Model worldModel={};
-    bool worldModelReady=false;
-    int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     int blockCounts[16]={0};
     std::unordered_map<long long,int> blockLookup;
     auto blockKey=[&](int x,int y,int z)->long long { return ((long long)y*worldSize+(long long)z)*worldSize+(long long)x; };
@@ -444,6 +445,37 @@ int main() {
     camera.up={0,1,0}; camera.fovy=(float)fov; camera.projection=CAMERA_PERSPECTIVE;
     Vector3 velocity={0,0,0};
     bool onGround=false;
+    struct ChunkRender { int x; int z; Model model; };
+    std::vector<ChunkRender> renderChunks;
+    const int CHUNK_SIZE=16;
+    const int RENDER_DISTANCE_CHUNKS=2;
+    auto clearChunks = [&]() {
+        for(auto& chunk:renderChunks) if(chunk.model.meshCount>0) UnloadModel(chunk.model);
+        renderChunks.clear();
+    };
+    auto updateChunks = [&]() {
+        if(screen!=PLAYING || blocks.empty()) return;
+        int pcx=Clamp((int)std::floor(camera.position.x/CHUNK_SIZE),0,(worldSize-1)/CHUNK_SIZE);
+        int pcz=Clamp((int)std::floor(camera.position.z/CHUNK_SIZE),0,(worldSize-1)/CHUNK_SIZE);
+        for(auto it=renderChunks.begin();it!=renderChunks.end();) {
+            if(std::abs(it->x-pcx)>RENDER_DISTANCE_CHUNKS || std::abs(it->z-pcz)>RENDER_DISTANCE_CHUNKS) {
+                if(it->model.meshCount>0) UnloadModel(it->model);
+                it=renderChunks.erase(it);
+            } else ++it;
+        }
+        for(int dz=-RENDER_DISTANCE_CHUNKS;dz<=RENDER_DISTANCE_CHUNKS;dz++) {
+            for(int dx=-RENDER_DISTANCE_CHUNKS;dx<=RENDER_DISTANCE_CHUNKS;dx++) {
+                int cx=pcx+dx, cz=pcz+dz;
+                if(cx<0 || cz<0 || cx*CHUNK_SIZE>=worldSize || cz*CHUNK_SIZE>=worldSize) continue;
+                bool loaded=false;
+                for(const auto& chunk:renderChunks) if(chunk.x==cx && chunk.z==cz) { loaded=true; break; }
+                if(loaded) continue;
+                Model model=BuildWorldModel(blocks,worldSize,cx,cz,CHUNK_SIZE);
+                if(model.meshCount>0) renderChunks.push_back({cx,cz,model});
+                return;
+            }
+        }
+    };
     int health=20, hunger=20, foodCount=5;
     float stamina=100.0f, hungerTimer=0.0f, starvationTimer=0.0f, regenTimer=0.0f;
     float yaw=-PI/2.0f, pitch=-0.38f;
@@ -529,10 +561,9 @@ int main() {
         GenerateWorld(blocks,worldSize,worldType,seed);
         RebuildHeightMap(blocks,worldSize,groundHeights);
         populateVillagers();
-        if(worldModelReady) UnloadModel(worldModel);
+        populateAnimals();
+        clearChunks();
         rebuildBlockLookup();
-        worldModel=BuildWorldModel(blocks,worldSize);
-        worldModelReady=true;
         resetCamera();
         screen=PLAYING;
         commandOpen=false;
@@ -553,9 +584,9 @@ int main() {
         else if (s=="/load") {
             if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
                 RebuildHeightMap(blocks,worldSize,groundHeights);
-                if(worldModelReady) UnloadModel(worldModel);
+                clearChunks();
                 rebuildBlockLookup();
-                worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; resetCamera();
+                  resetCamera();
                 message="Saved world loaded.";
             } else message="No valid save found.";
         }
@@ -921,10 +952,10 @@ int main() {
                             blocks.erase(blocks.begin()+hit);
                             miningTarget=-1; miningTimer=0.0f;
                             RebuildHeightMap(blocks,worldSize,groundHeights);
-                            if(worldModelReady) UnloadModel(worldModel);
+                            clearChunks();
                 rebuildBlockLookup();
-                            worldModel=BuildWorldModel(blocks,worldSize);
-                            worldModelReady=true;
+                            
+                            
                         }
                     }
                     else if(hit>=0 && placePressed) {
@@ -933,7 +964,7 @@ int main() {
                         int px=(int)std::lround(p.x), py=(int)std::lround(p.y), pz=(int)std::lround(p.z);
                         bool occupied=blockLookup.find(blockKey(px,py,pz))!=blockLookup.end();
                 rebuildBlockLookup();
-                        if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); rebuildBlockLookup(); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
+                        if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); rebuildBlockLookup(); RebuildHeightMap(blocks,worldSize,groundHeights); clearChunks();   }
                     }
                 } else { miningTarget=-1; miningTimer=0.0f; }
             }
@@ -949,6 +980,7 @@ int main() {
             if(IsKeyPressed(KEY_ESCAPE)) { commandOpen=false; DisableCursor(); }
         }
 
+        updateChunks();
         BeginDrawing();
         if(screen==PLAYING) {
             float daylight=Clamp(sinf(dayTime*2.0f*PI)*0.5f+0.5f,0.0f,1.0f);
@@ -976,7 +1008,7 @@ int main() {
                 }
             }
             
-            if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
+            for(const auto& chunk:renderChunks) DrawModel(chunk.model,Vector3Zero(),1.0f,WHITE);
             // Cave mobs: green zombies and pale skeletons.
             for(const auto& mob:caveMobs) {
                 Vector3 p=mob.p;
@@ -1125,10 +1157,10 @@ int main() {
                 if(button({cx-175,panelY+284,350,48},"CONTINUE WORLD")) {
                     if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
                         RebuildHeightMap(blocks,worldSize,groundHeights);
-                        if(worldModelReady) UnloadModel(worldModel);
+                        clearChunks();
                 rebuildBlockLookup();
-                        worldModel=BuildWorldModel(blocks,worldSize);
-                        worldModelReady=true;
+                        
+                        
                         resetCamera();
                         screen=PLAYING; commandOpen=false; inventoryOpen=false; DisableCursor();
                         message="Saved world loaded."; messageTime=3.0f;
@@ -1190,7 +1222,7 @@ int main() {
     }
     saveCurrentWorld();
     { std::ofstream cfg("settings.ini"); cfg<<"width="<<GetScreenWidth()<<"\nheight="<<GetScreenHeight()<<"\nfps="<<menuFPS<<"\nfullscreen="<<fullscreen<<"\ngraphics="<<graphicsQuality<<"\nfov="<<fov<<"\nmouse_sens="<<mouseSensitivity<<"\ncontroller_sens="<<controllerSensitivity<<"\n"; }
-    if(worldModelReady) UnloadModel(worldModel);
+    clearChunks();
     EnableCursor();
     CloseWindow();
     return 0;
