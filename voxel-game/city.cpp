@@ -31,15 +31,37 @@ static void initCamera(){camera.position={N*.5f+34,39,N*.5f+34};camera.target=ta
 static float buildingHeight(Tile t){if(t.tool==ZONE_RES)return 2.2f+t.level*.95f;if(t.tool==ZONE_COM)return 3.0f+t.level*1.35f;if(t.tool==ZONE_IND)return 1.8f+t.level*.35f;if(t.tool==POWER)return 2.5f;if(t.tool==WATER)return 2.0f;return 1.0f;}
 static void drawBuilding(int x,int z,Tile t){
  float h=buildingHeight(t);Color c=toolColors[t.tool];Vector3 p={(float)x+.5f,h*.5f,(float)z+.5f};
- DrawCube(p,.82f,h,.82f,c);DrawCubeWires(p,.82f,h,.82f,Fade(BLACK,.22f));
  if(t.tool==ZONE_RES||t.tool==ZONE_COM){
-  for(float y=.45f;y<h-.18f;y+=.48f){DrawCube({x+.5f,y,z+.5f},.84f,.07f,.84f,{120,190,220,255});}
-  DrawCube({x+.5f,h+.04f,z+.5f},.9f,.08f,.9f,Fade(c,.8f));
-  if(t.level>=3)DrawCube({x+.5f,h+.22f,z+.5f},.22f,.35f,.22f,Fade(c,.8f));
+  Color wall=t.tool==ZONE_RES?Color{190,174,147,255}:Color{105,151,177,255};
+  Color roof=t.tool==ZONE_RES?Color{112,69,57,255}:Color{48,62,82,255};
+  DrawCube(p,.82f,h,.82f,wall);
+  DrawCube({x+.5f,h+.07f,z+.5f},.94f,.16f,.94f,roof);
+  int floors=std::max(1,(int)(h/.48f));
+  for(int floor=0;floor<floors;floor++) for(int side=0;side<4;side++) for(int w=0;w<2;w++){
+   float yy=.34f+floor*.48f, off=(w==0?-.19f:.19f);
+   Color glass=t.level>=3?Color{93,184,211,255}:Color{105,163,188,255};
+   if(side==0)DrawCube({x+.5f+off,yy,z+.086f},.13f,.19f,.025f,glass);
+   if(side==1)DrawCube({x+.5f+off,yy,z+.914f},.13f,.19f,.025f,glass);
+   if(side==2)DrawCube({x+.086f,yy,z+.5f+off},.025f,.19f,.13f,glass);
+   if(side==3)DrawCube({x+.914f,yy,z+.5f+off},.025f,.19f,.13f,glass);
+  }
+  DrawCube({x+.5f,.16f,z+.5f},.88f,.12f,.88f,t.tool==ZONE_RES?Color{117,94,76,255}:Color{64,79,91,255});
+  if(t.level>=3){DrawCube({x+.5f,h+.22f,z+.5f},.25f,.22f,.25f,roof);DrawCube({x+.5f,h+.36f,z+.5f},.12f,.08f,.12f,WHITE);}
+ } else if(t.tool==ZONE_IND){
+  DrawCube(p,.86f,h,.86f,{153,147,128,255});DrawCube({x+.5f,h+.12f,z+.5f},.92f,.22f,.92f,{94,99,102,255});
+  DrawCylinder({x+.72f,1.55f,z+.28f},.14f,.10f,1.35f,10,{100,103,105,255});
+  DrawCylinder({x+.27f,1.20f,z+.72f},.10f,.08f,.85f,10,{120,112,102,255});
+  DrawCube({x+.5f,.5f,z+.06f},.32f,.22f,.035f,{226,177,79,255});
+ } else if(t.tool==POWER){
+  DrawCube(p,.86f,h,.86f,{112,116,124,255});DrawCube({x+.5f,1.8f,z+.5f},.24f,1.5f,.24f,LIGHTGRAY);
+  DrawCube({x+.5f,2.6f,z+.5f},1.05f,.14f,.14f,{224,190,92,255});
+  DrawCube({x+.5f,2.6f,z+.5f},.14f,.14f,1.05f,{224,190,92,255});
+ } else if(t.tool==WATER){
+  DrawCylinder({x+.5f,1.3f,z+.5f},.39f,.39f,1.35f,16,{91,163,194,255});
+  DrawCylinder({x+.5f,2.05f,z+.5f},.48f,.48f,.20f,16,{190,204,211,255});
+  DrawCylinder({x+.5f,.52f,z+.5f},.08f,.08f,.85f,10,{150,163,174,255});
  }
- if(t.tool==ZONE_IND){DrawCylinder({x+.7f,1.3f,z+.3f},.12f,.12f,1.0f,8,GRAY);DrawCube({x+.3f,.6f,z+.7f},.2f,.15f,.2f,ORANGE);}
- if(t.tool==POWER){DrawCube({x+.5f,1.8f,z+.5f},.2f,1.4f,.2f,LIGHTGRAY);DrawCube({x+.5f,2.55f,z+.5f},1.0f,.12f,.12f,LIGHTGRAY);}
- if(t.tool==WATER){DrawCylinder({x+.5f,1.35f,z+.5f},.42f,.42f,1.4f,12,{100,190,220,255});DrawCylinder({x+.5f,2.1f,z+.5f},.48f,.48f,.18f,12,LIGHTGRAY);}
+ DrawCubeWires(p,.84f,h,.84f,Fade(BLACK,.18f));
 }
 static void spawnCar(){
  std::vector<Vector2> roads;for(int x=0;x<N;x++)for(int z=0;z<N;z++)if(city[x][z].tool==ROAD)roads.push_back({(float)x,(float)z});
@@ -116,21 +138,36 @@ int main(){
    for(int x=0;x<N;x++)for(int z=0;z<N;z++){BoundingBox b={{(float)x,0,(float)z},{x+1.0f,5.0f,z+1.0f}};RayCollision c=GetRayCollisionBox(ray,b);if(c.hit&&c.distance<best){best=c.distance;bx=x;bz=z;}}
    if(inBounds(bx,bz)&&city[bx][bz].tool>=0){money+=90;city[bx][bz]=Tile{};}
   }
-  BeginDrawing();ClearBackground({18,25,37,255});
+  BeginDrawing();
+  ClearBackground({145,190,218,255});
+  DrawRectangleGradientV(0,0,GetScreenWidth(),GetScreenHeight(),{116,166,205,255},{211,220,211,255});
   BeginMode3D(camera);
-   DrawPlane({N/2.0f,-.12f,N/2.0f},{N,N},{47,70,66,255});
+   DrawPlane({N/2.0f,-.12f,N/2.0f},{N,N},{67,105,75,255});
+   DrawSphere({N*.78f,24,N*.18f},3.2f,{255,224,151,255});
    for(int x=0;x<N;x++)for(int z=0;z<N;z++){
-    DrawCube({x+.5f,-.035f,z+.5f},.99f,.07f,.99f,{67,91,77,255});Tile t=city[x][z];if(t.tool<0)continue;
-    if(t.tool==ROAD){DrawCube({x+.5f,.04f,z+.5f},1.0f,.12f,1.0f,{58,62,70,255});DrawCube({x+.5f,.105f,z+.5f},.08f,.012f,.32f,{225,204,115,255});}
-    else if(t.tool==PARK){DrawCube({x+.5f,.12f,z+.5f},.9f,.22f,.9f,{55,151,78,255});DrawCylinder({x+.5f,.58f,z+.5f},.07f,.07f,.75f,6,BROWN);DrawSphere({x+.5f,.98f,z+.5f},.34f,{37,132,67,255});}
+    Color ground=((x*17+z*31)%7==0)?Color{75,112,78,255}:Color{68,101,72,255};
+    DrawCube({x+.5f,-.035f,z+.5f},.99f,.07f,.99f,ground);Tile t=city[x][z];if(t.tool<0)continue;
+    if(t.tool==ROAD){DrawCube({x+.5f,.035f,z+.5f},1.0f,.12f,1.0f,{54,59,66,255});
+     DrawCube({x+.5f,.105f,z+.5f},.09f,.012f,.34f,{239,211,116,255});
+     DrawCube({x+.5f,.112f,z+.08f},.76f,.018f,.035f,{210,213,213,255});
+     DrawCube({x+.5f,.112f,z+.92f},.76f,.018f,.035f,{210,213,213,255});}
+    else if(t.tool==PARK){DrawCube({x+.5f,.12f,z+.5f},.9f,.22f,.9f,{65,155,78,255});
+     DrawCylinder({x+.5f,.62f,z+.5f},.075f,.055f,.88f,7,{105,78,53,255});
+     DrawSphere({x+.5f,1.13f,z+.5f},.39f,{40,135,66,255});
+     DrawSphere({x+.34f,1.05f,z+.31f},.24f,{54,151,74,255});
+     DrawSphere({x+.66f,1.04f,z+.62f},.25f,{47,142,67,255});}
     else if(t.tool==ZONE_RES||t.tool==ZONE_COM||t.tool==ZONE_IND){Color zone=Fade(toolColors[t.tool],.32f);DrawCube({x+.5f,.012f,z+.5f},.96f,.025f,.96f,zone);if(t.level>0)drawBuilding(x,z,t);}
     else drawBuilding(x,z,t);
    }
-   for(const auto&c:cars){DrawCube(c.p,.34f,.22f,.58f,c.color);DrawCube({c.p.x,c.p.y+.13f,c.p.z},.23f,.12f,.28f,SKYBLUE);}
+   for(const auto&c:cars){DrawCube(c.p,.38f,.22f,.62f,c.color);
+     DrawCube({c.p.x,c.p.y+.14f,c.p.z},.27f,.13f,.30f,{104,174,205,255});
+     DrawCube({c.p.x-.13f,c.p.y-.105f,c.p.z-.20f},.10f,.07f,.08f,{28,30,34,255});
+     DrawCube({c.p.x+.13f,c.p.y-.105f,c.p.z+.20f},.10f,.07f,.08f,{28,30,34,255});}
    for(int x=0;x<=N;x+=4)DrawLine3D({(float)x,.02f,0},{(float)x,.02f,(float)N},Fade(WHITE,.1f));
    for(int z=0;z<=N;z+=4)DrawLine3D({0,.02f,(float)z},{(float)N,.02f,(float)z},Fade(WHITE,.1f));
   EndMode3D();
-  DrawRectangleGradientV(0,0,GetScreenWidth(),96,{25,37,57,255},{15,22,36,255});
+  DrawRectangleGradientV(0,0,GetScreenWidth(),96,{31,48,72,255},{13,22,37,255});
+  DrawRectangle(0,94,GetScreenWidth(),2,{83,148,185,255});
   DrawText("SNIPZ CITY",20,12,25,RAYWHITE);DrawText(TextFormat("$ %d",money),220,15,23,{108,220,143,255});
   DrawText(TextFormat("POP %d",population),390,18,18,RAYWHITE);DrawText(TextFormat("JOBS %d",jobs),520,18,18,RAYWHITE);DrawText(TextFormat("HAPPY %d%%",happiness),635,18,18,{255,211,113,255});
   DrawText(TextFormat("POWER %d  WATER %d",electricity,waterSupply),790,18,17,{130,210,235,255});DrawText(TextFormat("YEAR %d / MONTH %d",year,month),1050,18,17,RAYWHITE);
