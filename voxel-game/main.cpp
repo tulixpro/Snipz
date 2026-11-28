@@ -147,15 +147,9 @@ static Texture2D CreateBlockAtlas() {
     return texture;
 }
 
-static Model BuildWorldModel(const std::vector<Block>& blocks, int size, int chunkX=-1, int chunkZ=-1, int chunkSize=16) {
+static Model BuildWorldModel(const std::vector<Block>& blocks, int size, const std::unordered_set<long long>& solid, int chunkX=-1, int chunkZ=-1, int chunkSize=16) {
     constexpr int MAX_Y=128;
-    std::unordered_set<long long> solid;
-    solid.reserve(blocks.size()*2+1);
     auto voxelKey=[&](int x,int y,int z)->long long { return ((long long)y*size+(long long)z)*size+(long long)x; };
-    for(const auto& block:blocks) {
-        int x=(int)std::lround(block.p.x), y=(int)std::lround(block.p.y), z=(int)std::lround(block.p.z);
-        if(x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y) solid.insert(voxelKey(x,y,z));
-    }
     auto has=[&](int x,int y,int z){ return x>=0&&x<size&&z>=0&&z<size&&y>=0&&y<MAX_Y&&solid.find(voxelKey(x,y,z))!=solid.end(); };
     std::vector<float> vertices, normals, texcoords;
     std::vector<unsigned char> colors;
@@ -426,8 +420,16 @@ int main() {
 int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     int blockCounts[16]={0};
     std::unordered_map<long long,int> blockLookup;
+    std::unordered_set<long long> blockSolid;
     auto blockKey=[&](int x,int y,int z)->long long { return ((long long)y*worldSize+(long long)z)*worldSize+(long long)x; };
-    auto rebuildBlockLookup=[&]() { blockLookup.clear(); blockLookup.reserve(blocks.size()*2); for(int i=0;i<(int)blocks.size();++i) blockLookup[blockKey((int)std::lround(blocks[i].p.x),(int)std::lround(blocks[i].p.y),(int)std::lround(blocks[i].p.z))]=i; };
+    auto rebuildBlockLookup=[&]() {
+        blockLookup.clear(); blockSolid.clear();
+        blockLookup.reserve(blocks.size()*2); blockSolid.reserve(blocks.size()*2);
+        for(int i=0;i<(int)blocks.size();++i) {
+            long long key=blockKey((int)std::lround(blocks[i].p.x),(int)std::lround(blocks[i].p.y),(int)std::lround(blocks[i].p.z));
+            blockLookup[key]=i; blockSolid.insert(key);
+        }
+    };
     bool creative=false, creativeFlying=false, pickaxeEquipped=true, night=false, commandOpen=false, inventoryOpen=false;
     float dayTime=0.25f;
     char command[128]={0};
@@ -463,16 +465,19 @@ int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
                 it=renderChunks.erase(it);
             } else ++it;
         }
-        for(int dz=-RENDER_DISTANCE_CHUNKS;dz<=RENDER_DISTANCE_CHUNKS;dz++) {
-            for(int dx=-RENDER_DISTANCE_CHUNKS;dx<=RENDER_DISTANCE_CHUNKS;dx++) {
-                int cx=pcx+dx, cz=pcz+dz;
-                if(cx<0 || cz<0 || cx*CHUNK_SIZE>=worldSize || cz*CHUNK_SIZE>=worldSize) continue;
-                bool loaded=false;
-                for(const auto& chunk:renderChunks) if(chunk.x==cx && chunk.z==cz) { loaded=true; break; }
-                if(loaded) continue;
-                Model model=BuildWorldModel(blocks,worldSize,cx,cz,CHUNK_SIZE);
-                if(model.meshCount>0) renderChunks.push_back({cx,cz,model});
-                return;
+        for(int radius=0;radius<=RENDER_DISTANCE_CHUNKS;radius++) {
+            for(int dz=-radius;dz<=radius;dz++) {
+                for(int dx=-radius;dx<=radius;dx++) {
+                    if(std::max(std::abs(dx),std::abs(dz))!=radius) continue;
+                    int cx=pcx+dx, cz=pcz+dz;
+                    if(cx<0 || cz<0 || cx*CHUNK_SIZE>=worldSize || cz*CHUNK_SIZE>=worldSize) continue;
+                    bool loaded=false;
+                    for(const auto& chunk:renderChunks) if(chunk.x==cx && chunk.z==cz) { loaded=true; break; }
+                    if(loaded) continue;
+                    Model model=BuildWorldModel(blocks,worldSize,blockSolid,cx,cz,CHUNK_SIZE);
+                    renderChunks.push_back({cx,cz,model});
+                    return;
+                }
             }
         }
     };
