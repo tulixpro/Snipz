@@ -257,8 +257,7 @@ static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int&
     const char expected[8]={'B','L','K','W','O','R','L','D'};
     if(!in || std::memcmp(magic,expected,8)!=0) return false;
     int version=0, newSize=0, newType=0, newSeed=0, mode=1, count=0;
-    in.read((char*)&version,sizeof(version));    in.read((char*)&newSize,sizeof(newSize));
-    in.read((char*)&newType,sizeof(newType));
+    in.read((char*)&version,sizeof(version));    in.read((char*)&newSize,sizeof(newSize));    in.read((char*)&newType,sizeof(newType));
     in.read((char*)&newSeed,sizeof(newSeed));
     in.read((char*)&mode,sizeof(mode));    in.read((char*)&count,sizeof(count));
     if(!in || version!=1 || newSize<32 || newSize>256 || newType<0 || newType>3 || count<0 || count>2000000) return false;
@@ -517,8 +516,7 @@ int main() {
                 if(!creative) {
                     hungerTimer+=dt;
                     if(hungerTimer>=35.0f) { hungerTimer=0.0f; hunger=std::max(0,hunger-1); }
-                    if(hunger==0) {                        starvationTimer+=dt;
-                        if(starvationTimer>=3.0f) { starvationTimer=0.0f; health=std::max(0,health-1); }
+                    if(hunger==0) {                        starvationTimer+=dt;                        if(starvationTimer>=3.0f) { starvationTimer=0.0f; health=std::max(0,health-1); }
                     } else starvationTimer=0.0f;
                     if(hunger>=18 && health<20) {
                         regenTimer+=dt;
@@ -531,7 +529,7 @@ int main() {
                         messageTime=4.0f;
                     }
                 }
-                if(camera.position.y<-24.0f) {
+                if(camera.position.y<-100.0f) {
                     if(!creative) { health=std::max(0,health-5); hunger=std::max(0,hunger-1); }
                     resetCamera();
                     message="You fell into the void. Respawned at spawn.";
@@ -593,7 +591,7 @@ int main() {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
-                        if(!occupied && p.y>=0 && p.y<63 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
+                        if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     }
                 } else { miningTarget=-1; miningTimer=0.0f; }
             }
