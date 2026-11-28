@@ -413,7 +413,7 @@ int main() {
     std::unordered_map<long long,int> blockLookup;
     auto blockKey=[&](int x,int y,int z)->long long { return ((long long)y*worldSize+(long long)z)*worldSize+(long long)x; };
     auto rebuildBlockLookup=[&]() { blockLookup.clear(); blockLookup.reserve(blocks.size()*2); for(int i=0;i<(int)blocks.size();++i) blockLookup[blockKey((int)std::lround(blocks[i].p.x),(int)std::lround(blocks[i].p.y),(int)std::lround(blocks[i].p.z))]=i; };
-    bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
+    bool creative=false, creativeFlying=false, pickaxeEquipped=true, night=false, commandOpen=false, inventoryOpen=false;
     float dayTime=0.25f;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
@@ -509,6 +509,9 @@ int main() {
     };
     auto startWorld = [&]() {
         caveMobs.clear(); caveMobsSpawned=false;
+        creative=false; creativeFlying=false; pickaxeEquipped=true;
+        health=20; hunger=20; stamina=100.0f; foodCount=5;
+        for(int i=0;i<paletteCount;i++) blockCounts[i]=0;
         GenerateWorld(blocks,worldSize,worldType,seed);
         RebuildHeightMap(blocks,worldSize,groundHeights);
         populateVillagers();
@@ -526,11 +529,11 @@ int main() {
     auto saveCurrentWorld = [&]() { return !blocks.empty() && SaveWorldFile(blocks,worldSize,worldType,seed,creative); };
     auto runCommand = [&]() {
         std::string s(command);
-        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-12 /seed /save /load";
+        if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-16 /seed /save /load";
         else if (s=="/day") { dayTime=0.25f; night=false; message="Daytime set. The cycle continues."; }
         else if (s=="/night") { dayTime=0.75f; night=true; message="Nighttime set. The cycle continues."; }
-        else if (s=="/creative") { creative=true; message="Creative mode enabled."; }
-        else if (s=="/survival") { creative=false; health=20; hunger=20; stamina=100.0f; foodCount=5; message="Survival mode enabled! Collect blocks to build."; }
+        else if (s=="/creative") { creative=true; creativeFlying=false; message="Creative mode enabled. Press V to fly."; }
+        else if (s=="/survival") { creative=false; creativeFlying=false; health=20; hunger=20; stamina=100.0f; foodCount=5; message="Survival mode enabled! Collect blocks to build."; }
         else if (s=="/seed") message=TextFormat("World seed: %d",seed);
         else if (s=="/save") message=SaveWorldFile(blocks,worldSize,worldType,seed,creative)?"World saved.":"Could not save world.";
         else if (s=="/load") {
@@ -545,7 +548,7 @@ int main() {
         else if (s.rfind("/give ",0)==0) {
             int v=atoi(s.substr(6).c_str());
             if (v>=1 && v<=paletteCount) { selected=v-1; message=TextFormat("Selected %s.",blockNames[selected]); }
-            else message="Usage: /give 1-12";
+            else message="Usage: /give 1-16";
         } else message="Unknown command. Type /help.";
         command[0]='\0'; commandOpen=false; messageTime=4.0f;
     };
@@ -679,7 +682,10 @@ int main() {
                 else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
             }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
-            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | F attack nearby cave zombies | Hold LMB mine | RMB build"; messageTime=5; }
+            if (IsKeyPressed(KEY_F1)) { message="WASD move | SHIFT sprint | P pickaxe | G switch mode | V creative flight | SPACE jump/up"; messageTime=5; }
+            if(IsKeyPressed(KEY_G)) { creative=!creative; creativeFlying=false; if(!creative) { health=20; hunger=20; stamina=100.0f; foodCount=5; } message=creative?"Creative mode! Press V to fly.":"Survival mode enabled."; messageTime=3.0f; }
+            if(IsKeyPressed(KEY_V) && creative) { creativeFlying=!creativeFlying; velocity.y=0.0f; message=creativeFlying?"Flight enabled: SPACE up, SHIFT down.":"Flight disabled."; messageTime=2.5f; }
+            if(IsKeyPressed(KEY_P)) { pickaxeEquipped=!pickaxeEquipped; miningTarget=-1; miningTimer=0.0f; message=pickaxeEquipped?"Pickaxe equipped.":"Hand selected."; messageTime=2.0f; }
             if(IsKeyPressed(KEY_C) && !creative) { if(blockCounts[9]>=4) { blockCounts[9]-=4; blockCounts[11]++; message="Crafted 1 crafting table from 4 wood."; } else { message="Need 4 wood to craft a crafting table."; } messageTime=3.0f; }
             if (!commandOpen) {
                 Vector2 mouse=GetMouseDelta();
@@ -739,35 +745,39 @@ int main() {
                 if((IsKeyPressed(KEY_SPACE) || ((activeGamepad>=0) && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
                 bool wasOnGround=onGround;
                 onGround=false;
-                velocity.y-=18.0f*dt;
-                float previousY=camera.position.y;
-                camera.position.y+=velocity.y*dt;
-                // Resolve vertical collisions with block tops and ceilings.
-                float oldFeet=previousY-2.10f, newFeet=camera.position.y-2.10f;
-                float oldHead=previousY-0.30f, newHead=camera.position.y-0.30f;
-                int px=(int)std::floor(camera.position.x+0.5f), pz=(int)std::floor(camera.position.z+0.5f);
-                bool blockLanded=false;
-                for(int by=(int)std::floor(std::min(oldFeet,newFeet)-0.5f);by<=(int)std::ceil(std::max(oldHead,newHead)+0.5f);by++) {
-                    auto it=blockLookup.find(blockKey(px,by,pz));
-                    if(it==blockLookup.end()) continue;
-                    const Vector3 bp=blocks[it->second].p;
-                    bool horizontal=std::fabs(camera.position.x-bp.x)<0.78f && std::fabs(camera.position.z-bp.z)<0.78f;
-                    if(!horizontal) continue;
-                    float top=bp.y+0.5f, bottom=bp.y-0.5f;
-                    if(velocity.y<=0.0f && oldFeet>=top-0.04f && newFeet<top) {
-                        camera.position.y=top+2.10f; velocity.y=0.0f; onGround=true; blockLanded=true;
-                    } else if(velocity.y>0.0f && oldHead<=bottom+0.04f && newHead>bottom) {
-                        camera.position.y=bottom+0.30f; velocity.y=0.0f;
+                if(creative && creativeFlying) {
+                    velocity.y=0.0f;
+                    float vertical=(IsKeyDown(KEY_SPACE)?1.0f:0.0f)-(IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT)?1.0f:0.0f);
+                    camera.position.y+=vertical*10.0f*dt;
+                } else {
+                    velocity.y-=18.0f*dt;
+                    float previousY=camera.position.y;
+                    camera.position.y+=velocity.y*dt;
+                    // Resolve vertical collisions with block tops and ceilings.
+                    float oldFeet=previousY-2.10f, newFeet=camera.position.y-2.10f;
+                    float oldHead=previousY-0.30f, newHead=camera.position.y-0.30f;
+                    int px=(int)std::floor(camera.position.x+0.5f), pz=(int)std::floor(camera.position.z+0.5f);
+                    bool blockLanded=false;
+                    for(int by=(int)std::floor(std::min(oldFeet,newFeet)-0.5f);by<=(int)std::ceil(std::max(oldHead,newHead)+0.5f);by++) {
+                        auto it=blockLookup.find(blockKey(px,by,pz));
+                        if(it==blockLookup.end()) continue;
+                        const Vector3 bp=blocks[it->second].p;
+                        bool horizontal=std::fabs(camera.position.x-bp.x)<0.78f && std::fabs(camera.position.z-bp.z)<0.78f;
+                        if(!horizontal) continue;
+                        float top=bp.y+0.5f, bottom=bp.y-0.5f;
+                        if(velocity.y<=0.0f && oldFeet>=top-0.04f && newFeet<top) {
+                            camera.position.y=top+2.10f; velocity.y=0.0f; onGround=true; blockLanded=true;
+                        } else if(velocity.y>0.0f && oldHead<=bottom+0.04f && newHead>bottom) {
+                            camera.position.y=bottom+0.30f; velocity.y=0.0f;
+                        }
                     }
-                }
-                // Do not clamp the player to the surface height map: caves and mined tunnels
-                // can be far below that surface. Actual block-top collisions above handle floors.
-                // Keep fall damage tied to real block landings rather than the surface map.
-                if(blockLanded && !creative && !wasOnGround && velocity.y < -11.0f) {
-                    int impact=(int)std::floor((-velocity.y-10.0f)*0.75f);
-                    health=std::max(0,health-impact);
-                    message=TextFormat("Fall damage! -%d HP",impact);
-                    messageTime=2.5f;
+                    // Underground floors are resolved from actual blocks, not surface height.
+                    if(blockLanded && !creative && !wasOnGround && velocity.y < -11.0f) {
+                        int impact=(int)std::floor((-velocity.y-10.0f)*0.75f);
+                        health=std::max(0,health-impact);
+                        message=TextFormat("Fall damage! -%d HP",impact);
+                        messageTime=2.5f;
+                    }
                 }
                 if(!creative) {
                     hungerTimer+=dt;
@@ -868,7 +878,7 @@ int main() {
                             int bt=0;
                             for(int t=0;t<paletteCount;t++) if(blocks[hit].c.r==palette[t].r && blocks[hit].c.g==palette[t].g && blocks[hit].c.b==palette[t].b) { bt=t; break; }
                             const float hardness[16]={0.42f,0.48f,1.35f,0.38f,0.55f,0.30f,0.24f,0.95f,0.65f,0.72f,0.18f,0.82f,0.62f,0.95f,1.15f,1.45f};
-                            miningDuration=hardness[bt];
+                            miningDuration=hardness[bt]*(pickaxeEquipped?0.34f:1.0f);
                         }
                         miningTimer+=dt;
                         if(miningTimer>=miningDuration) {
@@ -983,7 +993,8 @@ int main() {
             DrawRectangleRounded({14,14,250,78},.12f,8,Fade(Color{8,14,26,255},.84f));
             DrawText("BLOCKLANDS",28,22,25,RAYWHITE);
             DrawFPS(29,55);
-            DrawText(TextFormat("%s  |  %s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL"),286,24,18,RAYWHITE);
+            DrawText(TextFormat("%s  |  %s%s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL",creativeFlying?" | FLY":""),286,24,18,RAYWHITE);
+            DrawText(pickaxeEquipped?"TOOL: PICKAXE (P)":"TOOL: HAND (P)",286,70,13,GOLD);
             if(!creative) {
                 DrawRectangleRounded({14,100,270,104},.12f,8,Fade(Color{8,14,26,255},.84f));
                 DrawText("HEALTH",28,108,13,Color{255,145,155,255});
@@ -1024,7 +1035,7 @@ int main() {
                 DrawRectangle(x+7,hotY+6,30,25,palette[i]);
                 DrawText(creative?"INF":TextFormat("%d",blockCounts[i]),x+7,hotY+33,9,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | HOLD SHIFT SPRINT | SPACE JUMP | HOLD LMB MINE/ATTACK | RMB PLACE | WHEEL BLOCK | E INVENTORY | C CRAFT",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT/DOWN | SPACE JUMP/UP | P PICKAXE | G MODE | V FLY | LMB MINE | RMB PLACE",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
