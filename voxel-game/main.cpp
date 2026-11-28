@@ -692,9 +692,20 @@ int main() {
             }
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 float panelX=GetScreenWidth()/2.0f-270.0f, panelY=GetScreenHeight()/2.0f-190.0f;
-                for(int i=0;i<27;i++) {
-                    Rectangle slot={panelX+28+(i%9)*56.0f,panelY+72+(i/9)*56.0f,48,48};
-                    if(CheckCollisionPointRec(GetMousePosition(),slot) && i<paletteCount) { selected=i; inventoryCursor=i; }
+                Rectangle modeButton={panelX+350,panelY+18,190,42};
+                if(CheckCollisionPointRec(GetMousePosition(),modeButton)) {
+                    creative=!creative;
+                    creativeFlying=false;
+                    velocity.y=0.0f;
+                    if(!creative) { health=20; hunger=20; stamina=100.0f; foodCount=5; }
+                    saveCurrentWorld();
+                    message=creative?"Creative mode enabled. Press V to fly.":"Survival mode enabled.";
+                    messageTime=3.0f;
+                } else {
+                    for(int i=0;i<27;i++) {
+                        Rectangle slot={panelX+28+(i%9)*56.0f,panelY+72+(i/9)*56.0f,48,48};
+                        if(CheckCollisionPointRec(GetMousePosition(),slot) && i<paletteCount) { selected=i; inventoryCursor=i; }
+                    }
                 }
             }
         }
@@ -952,30 +963,17 @@ int main() {
             Vector3 sunPos=Vector3Add(camera.position,{cosf(sunAngle)*90.0f,sinf(sunAngle)*58.0f,24.0f});
             DrawSphere(sunPos,2.4f,ColorLerp(Color{235,239,255,255},Color{255,224,142,255},daylight));
             if(night) DrawSphere(Vector3Add(camera.position,{-cosf(sunAngle)*82.0f,-sinf(sunAngle)*52.0f,-18.0f}),1.8f,Color{220,228,248,255});
-            // Camera-relative voxel clouds stay visible while exploring the map.
+            // Clouds are anchored to world coordinates, so they do not orbit the camera.
             if(daylight>0.18f) {
                 for(int cloud=0;cloud<9;cloud++) {
-                    float a=(float)cloud*0.698f+(float)dayTime*0.18f;
-                    float radius=27.0f+(cloud%3)*8.0f;
-                    float cx=camera.position.x+cosf(a)*radius;
-                    float cz=camera.position.z+sinf(a)*radius;
-                    float cy=39.0f+(cloud%4)*2.2f;
-                    Color cloudColor=Color{244,249,255,225};
-                    DrawCube({cx,cy,cz},8.0f,1.15f,4.0f,cloudColor);
-                    DrawCube({cx+2.8f,cy+0.35f,cz},5.2f,1.0f,3.6f,cloudColor);
-                    DrawCube({cx-2.6f,cy+0.15f,cz+0.5f},4.6f,0.9f,3.2f,cloudColor);
+                    float cx=6.0f+noise2(cloud*17+seed,31,seed+177)*(worldSize-12);
+                    float cz=6.0f+noise2(cloud*29+seed,73,seed+233)*(worldSize-12);
+                    float cy=48.0f+(cloud%3)*3.0f;
+                    Color cloudColor=Color{244,249,255,220};
+                    DrawCube({cx,cy,cz},8.0f,1.0f,4.0f,cloudColor);
+                    DrawCube({cx+2.8f,cy+0.25f,cz},5.2f,0.9f,3.6f,cloudColor);
+                    DrawCube({cx-2.6f,cy+0.12f,cz+0.5f},4.6f,0.8f,3.2f,cloudColor);
                 }
-            }
-            // Distant layered blocky mountain silhouettes add a stronger horizon.
-            for(int ridge=0;ridge<12;ridge++) {
-                float a=(float)ridge*(2.0f*PI/12.0f);
-                float dist=58.0f+(ridge%3)*5.0f;
-                float mx=camera.position.x+cosf(a)*dist;
-                float mz=camera.position.z+sinf(a)*dist;
-                float mh=12.0f+(ridge%4)*4.0f;
-                Color mountain=ColorLerp(Color{36,52,79,255},Color{103,143,169,255},daylight);
-                DrawCube({mx,17.0f+mh*0.5f,mz},18.0f,mh,15.0f,mountain);
-                DrawCube({mx,17.0f+mh+1.0f,mz},10.0f,3.0f,9.0f,ColorLerp(Color{67,82,111,255},Color{157,181,194,255},daylight));
             }
             
             if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
@@ -1089,6 +1087,26 @@ int main() {
                 DrawRectangleRounded({90.0f,(float)GetScreenHeight()-125.0f,(float)GetScreenWidth()-180.0f,90.0f},.12f,8,Color{20,29,45,248});
                 DrawText("COMMAND  (ENTER TO RUN, ESC TO CLOSE)",112,GetScreenHeight()-112,14,SKYBLUE);
                 DrawText(TextFormat(">%s_",command),112,GetScreenHeight()-80,24,WHITE);
+            }
+            if(inventoryOpen) {
+                float panelX=GetScreenWidth()/2.0f-270.0f, panelY=GetScreenHeight()/2.0f-190.0f;
+                DrawRectangle(0,0,GetScreenWidth(),GetScreenHeight(),Fade(BLACK,.58f));
+                DrawRectangleRounded({panelX,panelY,540,380},.06f,12,Color{24,34,49,250});
+                DrawRectangleRoundedLines({panelX,panelY,540,380},.06f,12,Color{112,151,190,255});
+                DrawText("INVENTORY", (int)panelX+28,(int)panelY+20,24,WHITE);
+                Rectangle modeButton={panelX+350,panelY+18,190,42};
+                DrawRectangleRounded(modeButton,.15f,8,creative?Color{59,126,87,255}:Color{145,91,55,255});
+                DrawText(creative?"SWITCH TO SURVIVAL":"SWITCH TO CREATIVE",(int)modeButton.x+9,(int)modeButton.y+13,13,WHITE);
+                for(int i=0;i<27;i++) {
+                    Rectangle slot={panelX+28+(i%9)*56.0f,panelY+72+(i/9)*56.0f,48,48};
+                    DrawRectangleRounded(slot,.10f,5,i==selected?Color{179,132,57,255}:(i==inventoryCursor?Color{74,108,148,255}:Color{48,61,79,255}));
+                    if(i<paletteCount) {
+                        DrawRectangle((int)slot.x+9,(int)slot.y+7,30,25,palette[i]);
+                        DrawText(blockNames[i],(int)slot.x+1,(int)slot.y+34,8,WHITE);
+                        if(!creative) DrawText(TextFormat("%d",blockCounts[i]),(int)slot.x+34,(int)slot.y+34,9,GOLD);
+                    }
+                }
+                DrawText("Click a block to select  |  E or ESC to close",(int)panelX+28,(int)panelY+342,13,Color{198,213,229,255});
             }
         } else {
             drawBackdrop();
