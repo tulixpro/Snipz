@@ -447,6 +447,10 @@ int main() {
     };
     bool creative=false, creativeFlying=false, pickaxeEquipped=true, night=false, commandOpen=false, inventoryOpen=false;
     float dayTime=0.25f;
+    // Gentle weather cycle: long clear periods followed by short rain showers.
+    float weatherClock=0.0f;
+    float weatherDuration=145.0f;
+    bool raining=false;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
     float messageTime=4.0f;
@@ -699,6 +703,15 @@ int main() {
                 if(animal.p.y<19.0f || animal.p.y>50.0f) animal.dir=Vector3Scale(animal.dir,-1.0f);
             }
             dayTime+=dt/720.0f; if(dayTime>=1.0f) dayTime-=1.0f; night=(dayTime<0.22f || dayTime>0.78f);
+            weatherClock+=dt;
+            if(weatherClock>=weatherDuration) {
+                weatherClock=0.0f;
+                raining=!raining;
+                weatherDuration=raining?42.0f+noise2((int)GetTime(),seed,seed+451)*28.0f:
+                                        125.0f+noise2((int)GetTime(),seed,seed+452)*100.0f;
+                message=raining?"Rain is moving in...":"The skies are clearing!";
+                messageTime=2.5f;
+            }
             if(!creative) {
                 for(auto it=caveMobs.begin();it!=caveMobs.end();) {
                     Vector3 delta=Vector3Subtract(camera.position,it->p);
@@ -1011,24 +1024,42 @@ int main() {
         BeginDrawing();
         if(screen==PLAYING) {
             float daylight=Clamp(sinf(dayTime*2.0f*PI)*0.5f+0.5f,0.0f,1.0f);
-            Color sky=ColorLerp(Color{8,13,34,255},Color{111,181,232,255},daylight);
-            ClearBackground(sky);
-            // Layered horizon gradient gives the sky more depth without a costly shader.
-            DrawRectangleGradientV(0,0,GetScreenWidth(),GetScreenHeight(),
-                ColorLerp(Color{28,39,76,255},Color{115,181,226,255},daylight),
-                ColorLerp(Color{9,17,39,255},Color{191,218,237,255},daylight));
+            float sunHeight=sinf(dayTime*2.0f*PI);
+            float sunrise=Clamp(1.0f-fabsf(daylight-0.5f)*3.2f,0.0f,1.0f);
+            Color dayTop=ColorLerp(Color{75,111,160,255},Color{77,166,235,255},daylight);
+            Color dayHorizon=ColorLerp(Color{222,128,91,255},Color{190,224,246,255},daylight);
+            Color nightTop=Color{7,12,30,255};
+            Color top=ColorLerp(nightTop,dayTop,daylight);
+            Color horizon=ColorLerp(Color{15,23,47,255},dayHorizon,daylight);
+            if(sunrise>0.0f && daylight>0.22f && daylight<0.78f) {
+                horizon=ColorLerp(horizon,Color{255,174,119,255},sunrise*0.52f);
+                top=ColorLerp(top,Color{103,137,190,255},sunrise*0.22f);
+            }
+            if(raining) {
+                top=ColorLerp(top,Color{63,75,91,255},0.62f);
+                horizon=ColorLerp(horizon,Color{93,111,127,255},0.48f);
+            }
+            ClearBackground(top);
+            // Layered sky: warm horizon at dawn/dusk, bright blue at noon, deep blue at night.
+            DrawRectangleGradientV(0,0,GetScreenWidth(),GetScreenHeight(),top,horizon);
             BeginMode3D(camera);
             float sunAngle=dayTime*2.0f*PI;
             Vector3 sunPos=Vector3Add(camera.position,{cosf(sunAngle)*90.0f,sinf(sunAngle)*58.0f,24.0f});
-            DrawSphere(sunPos,2.4f,ColorLerp(Color{235,239,255,255},Color{255,224,142,255},daylight));
+            if(daylight>0.20f) {
+                Color sunColor=ColorLerp(Color{255,184,128,255},Color{255,244,197,255},daylight);
+                DrawSphere(sunPos,4.8f,Fade(sunColor,0.13f));
+                DrawSphere(sunPos,3.2f,Fade(sunColor,0.28f));
+                DrawSphere(sunPos,2.4f,sunColor);
+            }
             if(night) DrawSphere(Vector3Add(camera.position,{-cosf(sunAngle)*82.0f,-sinf(sunAngle)*52.0f,-18.0f}),1.8f,Color{220,228,248,255});
             // Clouds are anchored to world coordinates, so they do not orbit the camera.
             if(daylight>0.18f) {
                 for(int cloud=0;cloud<9;cloud++) {
-                    float cx=6.0f+noise2(cloud*17+seed,31,seed+177)*(worldSize-12);
+                    float drift=fmodf((float)GetTime()*0.72f+cloud*23.0f,(float)worldSize);
+                    float cx=fmodf(6.0f+noise2(cloud*17+seed,31,seed+177)*(worldSize-12)+drift,(float)worldSize);
                     float cz=6.0f+noise2(cloud*29+seed,73,seed+233)*(worldSize-12);
                     float cy=48.0f+(cloud%3)*3.0f;
-                    Color cloudColor=Color{244,249,255,220};
+                    Color cloudColor=raining?Color{111,125,139,245}:Color{244,249,255,225};
                     DrawCube({cx,cy,cz},7.5f,1.0f,4.2f,cloudColor);
                     DrawCube({cx+2.8f,cy+0.25f,cz},5.2f,1.0f,3.8f,cloudColor);
                     DrawCube({cx-2.6f,cy+0.12f,cz+0.5f},4.6f,0.9f,3.4f,cloudColor);
@@ -1098,6 +1129,17 @@ int main() {
                 if(animal.type==3) DrawCubeV({p.x+0.61f*scale,p.y+0.40f*scale,p.z},{0.12f*scale,0.10f*scale,0.12f},Color{230,75,55,255});
             }
             EndMode3D();
+            // Lightweight camera-relative rain streaks, drawn in screen space.
+            if(raining) {
+                int sw=GetScreenWidth(), sh=GetScreenHeight();
+                for(int drop=0;drop<115;drop++) {
+                    float x=noise2(drop*17+(int)(GetTime()*19),drop*7,seed+771)*sw;
+                    float y=fmodf(noise2(drop*11,drop*23,seed+772)*sh+(float)GetTime()*510.0f, (float)sh);
+                    DrawLineEx({x,y},{x-5.0f,y+15.0f},1.0f,Fade(Color{190,215,235,255},0.52f));
+                }
+                DrawRectangle(0,0,GetScreenWidth(),GetScreenHeight(),Fade(Color{62,83,104,255},0.07f));
+            }
+
 
             DrawRectangleRounded({14,14,250,78},.12f,8,Fade(Color{8,14,26,255},.84f));
             DrawText("BLOCKLANDS",28,22,25,RAYWHITE);
