@@ -1,4 +1,4 @@
-name: Build Blocklands
+name: Build Snipz Games
 on:
   workflow_dispatch:
   push:
@@ -19,49 +19,22 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item voxel-game/build/Release/Blocklands.exe dist/
-          @("BLOCKLANDS", "Start Blocklands.exe directly.", "This build uses raylib's OpenGL 2.1 backend for older GPU/driver compatibility.", "This build is unsigned; SmartScreen may show a reputation warning.", "The game does not require administrator privileges.") | Set-Content dist/README.txt
+          Copy-Item voxel-game/build/Release/SnipzCity.exe dist/
+          Copy-Item voxel-game/build/Release/SnipzLauncher.exe dist/
+          @("SNIPZ LAUNCHER", "Start SnipzLauncher.exe to choose a game.", "Blocklands.exe: voxel sandbox prototype.", "SnipzCity.exe: original city-building prototype.", "Keep all three EXE files in the same folder.", "The apps are unsigned and do not require administrator privileges.") | Set-Content dist/README.txt
       - name: Microsoft Defender scan
         shell: pwsh
         run: |
           $scan = Get-Command Start-MpScan -ErrorAction SilentlyContinue
-          if ($scan) {
-            Start-MpScan -ScanType CustomScan -ScanPath "$PWD\dist"
-            Write-Host "Microsoft Defender scan requested for packaged files."
-          } else {
-            Write-Warning "Microsoft Defender is unavailable on this runner; scan skipped."
-          }
+          if ($scan) { Start-MpScan -ScanType CustomScan -ScanPath "$PWD\dist" }
       - name: Create SHA256 checksums
         shell: pwsh
         run: |
           Get-ChildItem dist -File | Get-FileHash -Algorithm SHA256 | ForEach-Object {
             "$($_.Hash)  $($_.Path | Split-Path -Leaf)"
           } | Set-Content dist/SHA256SUMS.txt
-      - name: Upload Windows game
+      - name: Upload Snipz bundle
         uses: actions/upload-artifact@v4
         with:
-          name: Blocklands-Windows-x64
+          name: Snipz-Launcher-Windows-x64
           path: dist/
-
-# Rebuild trigger: survival stacks and crafting table
-
-# Rebuild trigger: caves and dynamic day-night cycle
-
-# Rebuild trigger: taller underground and expanded cave height
-
-# Rebuild trigger: refined voxel atlas and progressive mining stages
-# Rebuild after procedural villages and expanded world update.
-# Rebuild after larger terrain and wandering animal update.
-
-# Rebuild for expanded cave generation
-
-# Rebuild for cave zombies, combat and heart HUD
-
-# Rebuild after performance optimization pass
-
-# Rebuild after solid block collision and village NPC update.
-
-# Rebuild after village NPC spawn correction.
-
-# Rebuild after expanded caves, new ore veins, sprinting and skeleton mobs.
-
-# Rebuild after sky, clouds, distant mountains and crosshair polish.
