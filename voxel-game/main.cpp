@@ -14,6 +14,7 @@
 struct Block { Vector3 p; Color c; };
 struct Animal { Vector3 p; Vector3 dir; float turnTimer; int type; };
 struct CaveMob { Vector3 p; float attackTimer; int hp; };
+struct Villager { Vector3 p; Vector3 dir; float turnTimer; int skin; };
 
 
 static float noise2(int x, int z, int seed) {
@@ -433,6 +434,25 @@ int main() {
         velocity={0,0,0}; onGround=false;
     };
     std::vector<Animal> animals;
+    std::vector<Villager> villagers;
+    auto populateVillagers = [&]() {
+        villagers.clear();
+        if(groundHeights.empty()) return;
+        int made=0;
+        for(const auto& b:blocks) {
+            if(b.c.r!=palette[11].r || b.c.g!=palette[11].g || b.c.b!=palette[11].b) continue;
+            int x=(int)std::lround(b.p.x), z=(int)std::lround(b.p.z), y=(int)std::lround(b.p.y);
+            if(x<2 || x>=worldSize-2 || z<2 || z>=worldSize-2) continue;
+            int surface=groundHeights[x*worldSize+z];
+            if(surface<=0 || y!=surface || made>=std::max(2,worldSize/100)) continue;
+            int vx=Clamp(x+3,1,worldSize-2), vz=Clamp(z+2,1,worldSize-2);
+            int vh=groundHeights[vx*worldSize+vz];
+            if(vh<=0) continue;
+            int skin=(int)(noise2(x,z,seed+707)*4.0f);
+            villagers.push_back({{(float)vx,(float)vh-0.5f,(float)vz},{1,0,0},2.0f+noise2(x,z,seed+17)*3.0f,skin});
+            made++;
+        }
+    };
     auto populateAnimals = [&]() {
         animals.clear();
         if(groundHeights.empty()) return;
@@ -477,6 +497,7 @@ int main() {
         caveMobs.clear(); caveMobsSpawned=false;
         GenerateWorld(blocks,worldSize,worldType,seed);
         RebuildHeightMap(blocks,worldSize,groundHeights);
+        populateVillagers();
         if(worldModelReady) UnloadModel(worldModel);
         rebuildBlockLookup();
         worldModel=BuildWorldModel(blocks,worldSize);
@@ -561,8 +582,23 @@ int main() {
         for(int gp=0;gp<4;gp++) if(IsGamepadAvailable(gp)) { activeGamepad=gp; break; }
         float dt=std::min(GetFrameTime(),0.05f);
         if(screen==PLAYING && !blocks.empty() && animals.empty()) populateAnimals();
+        if(screen==PLAYING && !blocks.empty() && villagers.empty()) populateVillagers();
         if(screen==PLAYING && !blocks.empty() && !caveMobsSpawned && !creative) populateCaveMobs();
         if(screen==PLAYING) {
+            for(auto& villager:villagers) {
+                villager.turnTimer-=dt;
+                if(villager.turnTimer<=0.0f) {
+                    float a=noise2((int)(villager.p.x*3+villager.p.z),(int)(villager.p.z*5),seed+villager.skin*97+(int)GetTime())*2.0f*PI;
+                    villager.dir={cosf(a),0,sinf(a)};
+                    villager.turnTimer=2.5f+noise2((int)villager.p.x,(int)villager.p.z,seed+villager.skin*31)*3.5f;
+                }
+                Vector3 next=villager.p;
+                next.x+=villager.dir.x*dt*0.42f; next.z+=villager.dir.z*dt*0.42f;
+                int vx=Clamp((int)std::lround(next.x),1,worldSize-2), vz=Clamp((int)std::lround(next.z),1,worldSize-2);
+                int vh=groundHeights[vx*worldSize+vz];
+                if(vh>=19 && vh<=50) { villager.p.x=next.x; villager.p.z=next.z; villager.p.y=(float)vh-0.5f; }
+                else villager.dir=Vector3Scale(villager.dir,-1.0f);
+            }
             for(auto& animal:animals) {
                 animal.turnTimer-=dt;
                 if(animal.turnTimer<=0.0f) {
@@ -665,18 +701,57 @@ int main() {
                     if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
                     if(!sprinting) stamina=std::min(100.0f,stamina+16.0f*dt);
                 }
-                camera.position=Vector3Add(camera.position,move);
+                // Axis-separated voxel collision: trees, leaves, houses and placed blocks are solid.
+                auto blockedAt=[&](Vector3 pos)->bool {
+                    float feet=pos.y-2.10f, head=pos.y-0.30f;
+                    int minX=(int)std::floor(pos.x-0.28f+0.5f), maxX=(int)std::floor(pos.x+0.28f+0.5f);
+                    int minZ=(int)std::floor(pos.z-0.28f+0.5f), maxZ=(int)std::floor(pos.z+0.28f+0.5f);
+                    int minY=(int)std::floor(feet+0.5f), maxY=(int)std::floor(head+0.5f);
+                    for(int by=minY;by<=maxY;by++) for(int bz=minZ;bz<=maxZ;bz++) for(int bx=minX;bx<=maxX;bx++) {
+                        auto it=blockLookup.find(blockKey(bx,by,bz));
+                        if(it==blockLookup.end()) continue;
+                        const Vector3 bp=blocks[it->second].p;
+                        bool overlapX=pos.x+0.28f>bp.x-0.5f && pos.x-0.28f<bp.x+0.5f;
+                        bool overlapZ=pos.z+0.28f>bp.z-0.5f && pos.z-0.28f<bp.z+0.5f;
+                        bool overlapY=head>bp.y-0.5f+0.02f && feet<bp.y+0.5f-0.02f;
+                        if(overlapX && overlapZ && overlapY) return true;
+                    }
+                    return false;
+                };
+                Vector3 tryX=camera.position; tryX.x+=move.x;
+                if(!blockedAt(tryX)) camera.position.x=tryX.x;
+                Vector3 tryZ=camera.position; tryZ.z+=move.z;
+                if(!blockedAt(tryZ)) camera.position.z=tryZ.z;
                 if((IsKeyPressed(KEY_SPACE) || ((activeGamepad>=0) && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) && onGround) { velocity.y=7.0f; onGround=false; }
                 bool wasOnGround=onGround;
                 onGround=false;
                 velocity.y-=18.0f*dt;
+                float previousY=camera.position.y;
                 camera.position.y+=velocity.y*dt;
+                // Resolve vertical collisions with block tops and ceilings.
+                float oldFeet=previousY-2.10f, newFeet=camera.position.y-2.10f;
+                float oldHead=previousY-0.30f, newHead=camera.position.y-0.30f;
+                int px=(int)std::floor(camera.position.x+0.5f), pz=(int)std::floor(camera.position.z+0.5f);
+                bool blockLanded=false;
+                for(int by=(int)std::floor(std::min(oldFeet,newFeet)-0.5f);by<=(int)std::ceil(std::max(oldHead,newHead)+0.5f);by++) {
+                    auto it=blockLookup.find(blockKey(px,by,pz));
+                    if(it==blockLookup.end()) continue;
+                    const Vector3 bp=blocks[it->second].p;
+                    bool horizontal=std::fabs(camera.position.x-bp.x)<0.78f && std::fabs(camera.position.z-bp.z)<0.78f;
+                    if(!horizontal) continue;
+                    float top=bp.y+0.5f, bottom=bp.y-0.5f;
+                    if(velocity.y<=0.0f && oldFeet>=top-0.04f && newFeet<top) {
+                        camera.position.y=top+2.10f; velocity.y=0.0f; onGround=true; blockLanded=true;
+                    } else if(velocity.y>0.0f && oldHead<=bottom+0.04f && newHead>bottom) {
+                        camera.position.y=bottom+0.30f; velocity.y=0.0f;
+                    }
+                }
                 int gx=(int)std::lround(camera.position.x);
                 int gz=(int)std::lround(camera.position.z);
                 bool insideWorld=gx>=0 && gx<worldSize && gz>=0 && gz<worldSize;
                 int safeHeight=(insideWorld && !groundHeights.empty() && groundHeights[gx*worldSize+gz]>0)?groundHeights[gx*worldSize+gz]:-1000;
                 float floorY=(float)safeHeight+1.65f;
-                if(insideWorld && camera.position.y<floorY) {
+                if(!blockLanded && insideWorld && camera.position.y<floorY) {
                     if(!creative && !wasOnGround && velocity.y < -11.0f) {
                         int impact=(int)std::floor((-velocity.y-10.0f)*0.75f);
                         health=std::max(0,health-impact);
@@ -857,6 +932,21 @@ int main() {
                 DrawCubeV({p.x+0.43f,p.y+0.45f,p.z},{0.20f,0.62f,0.20f},Color{63,139,78,255});
                 DrawCubeV({p.x-0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},Color{48,65,112,255});
                 DrawCubeV({p.x+0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},Color{48,65,112,255});
+            }
+            // Friendly village NPCs with original voxel clothing and varied skin tones.
+            const Color villagerSkin[4]={{194,139,103,255},{224,174,132,255},{151,100,72,255},{181,123,88,255}};
+            const Color villagerCoat[4]={{76,111,153,255},{116,75,126,255},{83,126,91,255},{150,99,63,255}};
+            for(const auto& v:villagers) {
+                Vector3 p=v.p; Color skin=villagerSkin[v.skin%4], coat=villagerCoat[v.skin%4];
+                DrawCubeV({p.x,p.y+0.88f,p.z},{0.62f,0.82f,0.38f},coat);
+                DrawCubeV({p.x,p.y+1.52f,p.z},{0.52f,0.52f,0.48f},skin);
+                DrawCubeV({p.x,p.y+1.43f,p.z-0.255f},{0.20f,0.22f,0.08f},skin);
+                DrawCubeV({p.x,p.y+1.54f,p.z-0.27f},{0.055f,0.06f,0.025f},Color{45,38,34,255});
+                DrawCubeV({p.x-0.36f,p.y+0.88f,p.z},{0.20f,0.68f,0.20f},coat);
+                DrawCubeV({p.x+0.36f,p.y+0.88f,p.z},{0.20f,0.68f,0.20f},coat);
+                DrawCubeV({p.x-0.16f,p.y+0.28f,p.z},{0.20f,0.48f,0.22f},Color{55,57,65,255});
+                DrawCubeV({p.x+0.16f,p.y+0.28f,p.z},{0.20f,0.48f,0.22f},Color{55,57,65,255});
+                DrawCubeV({p.x,p.y+1.51f,p.z-0.31f},{0.12f,0.20f,0.16f},skin);
             }
             // Friendly wandering voxel animals: sheep, cows, pigs and chickens.
             for(const auto& animal:animals) {
