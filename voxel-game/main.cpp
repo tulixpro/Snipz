@@ -417,17 +417,26 @@ int main() {
     Screen settingsReturn = MAIN_MENU;
     std::vector<Block> blocks;
     std::vector<int> groundHeights;
-int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    const int CHUNK_SIZE=16;
     int blockCounts[16]={0};
     std::unordered_map<long long,int> blockLookup;
     std::unordered_set<long long> blockSolid;
+    std::vector<std::vector<Block>> chunkBlockData;
     auto blockKey=[&](int x,int y,int z)->long long { return ((long long)y*worldSize+(long long)z)*worldSize+(long long)x; };
     auto rebuildBlockLookup=[&]() {
         blockLookup.clear(); blockSolid.clear();
+        int chunksPerAxis=(worldSize+CHUNK_SIZE-1)/CHUNK_SIZE;
+        chunkBlockData.assign(chunksPerAxis*chunksPerAxis,{});
         blockLookup.reserve(blocks.size()*2); blockSolid.reserve(blocks.size()*2);
         for(int i=0;i<(int)blocks.size();++i) {
-            long long key=blockKey((int)std::lround(blocks[i].p.x),(int)std::lround(blocks[i].p.y),(int)std::lround(blocks[i].p.z));
+            int x=(int)std::lround(blocks[i].p.x), y=(int)std::lround(blocks[i].p.y), z=(int)std::lround(blocks[i].p.z);
+            long long key=blockKey(x,y,z);
             blockLookup[key]=i; blockSolid.insert(key);
+            if(x>=0 && z>=0 && x<worldSize && z<worldSize) {
+                int cx=x/CHUNK_SIZE, cz=z/CHUNK_SIZE;
+                chunkBlockData[cx*chunksPerAxis+cz].push_back(blocks[i]);
+            }
         }
     };
     bool creative=false, creativeFlying=false, pickaxeEquipped=true, night=false, commandOpen=false, inventoryOpen=false;
