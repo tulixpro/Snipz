@@ -115,7 +115,7 @@ static Texture2D CreateBlockAtlas() {
 }
 
 static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
-    constexpr int MAX_Y=64;
+    constexpr int MAX_Y=128;
     std::vector<unsigned char> solid(size*size*MAX_Y,0);
     auto index=[&](int x,int y,int z){ return (y*size+z)*size+x; };
     for(const auto& block:blocks) {
@@ -180,18 +180,22 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
             float n = smoothNoise2(x*0.035f,z*0.035f,seed)*0.58f
                     + smoothNoise2(x*0.075f,z*0.075f,seed+31)*0.27f
                     + smoothNoise2(x*0.16f,z*0.16f,seed+79)*0.15f;
-            int h = 4;
-            if (type == 0) h = 3 + (int)(n * 7);
-            if (type == 1) h = 3;
-            if (type == 2) h = 4 + (int)(n * 15);
+            int h = 20;
+            if (type == 0) h = 18 + (int)(n * 12);
+            if (type == 1) h = 18;
+            if (type == 2) h = 22 + (int)(n * 20);
             if (type == 3) {
                 float dx = (x - size/2.0f) / (size*0.48f);
                 float dz = (z - size/2.0f) / (size*0.48f);
                 float edge = 1.0f - (dx*dx + dz*dz);
-                h = edge > 0 ? 2 + (int)(edge * (4 + n*6)) : 1;
+                h = edge > 0 ? 14 + (int)(edge * (5 + n*9)) : 10;
             }
             h = std::max(1, h);
             for (int y = 0; y < h; ++y) {
+                // Carve broad, winding underground cave passages from deterministic 3D-style noise.
+                float caveA=smoothNoise2(x*0.082f+y*0.115f,z*0.082f-y*0.091f,seed+y*41);
+                float caveB=smoothNoise2(x*0.047f-y*0.073f,z*0.047f+y*0.061f,seed+700+y*23);
+                if(y>3 && y<h-3 && caveA>0.765f && caveB>0.49f) continue;
                 Color c = palette[1];
                 if (y == h-1) c = (type == 3 && h <= 2) ? palette[3] : palette[0];
                 if (type == 2 && y == h-1 && h > 13) c = palette[5];
@@ -202,7 +206,7 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
                 blocks.push_back({{(float)x,(float)y,(float)z},c});
             }
             // Water fills low coastal and valley tiles as a visible, non-flowing block.
-            if(h<=4) blocks.push_back({{(float)x,(float)h,(float)z},palette[4]});
+            if(h<18) for(int wy=h;wy<18;wy++) blocks.push_back({{(float)x,(float)wy,(float)z},palette[4]});
             if(type!=3 && h>=5 && noise2(x+733,z+191,seed+57)>0.994f)
                 blocks.push_back({{(float)x,(float)h,(float)z},palette[10]});
             if(type!=3 && h>=5 && x>=4 && x<size-4 && z>=4 && z<size-4 &&
@@ -257,8 +261,7 @@ static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int&
     in.read((char*)&newSize,sizeof(newSize));
     in.read((char*)&newType,sizeof(newType));
     in.read((char*)&newSeed,sizeof(newSeed));
-    in.read((char*)&mode,sizeof(mode));
-    in.read((char*)&count,sizeof(count));
+    in.read((char*)&mode,sizeof(mode));    in.read((char*)&count,sizeof(count));
     if(!in || version!=1 || newSize<32 || newSize>256 || newType<0 || newType>3 || count<0 || count>2000000) return false;
     std::vector<Block> loaded;
     loaded.reserve(count);
@@ -267,7 +270,7 @@ static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int&
         in.read((char*)&b.p,sizeof(b.p));
         in.read((char*)&b.c,sizeof(b.c));
         if(!in || !std::isfinite(b.p.x) || !std::isfinite(b.p.y) || !std::isfinite(b.p.z) ||
-           b.p.x<0 || b.p.x>=newSize || b.p.z<0 || b.p.z>=newSize || b.p.y<0 || b.p.y>=64) return false;
+           b.p.x<0 || b.p.x>=newSize || b.p.z<0 || b.p.z>=newSize || b.p.y<0 || b.p.y>=128) return false;
         loaded.push_back(b);
     }
     blocks.swap(loaded);
@@ -306,8 +309,10 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=256, worldType=0, seed=2026, selected=0, inventoryCursor=0;\n    int blockCounts[12]={0};
+    int worldSize=256, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int blockCounts[12]={0};
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
+    float dayTime=0.25f;
     char command[128]={0};
     std::string message="Welcome to Blocklands!";
     float messageTime=4.0f;
@@ -356,8 +361,8 @@ int main() {
     auto runCommand = [&]() {
         std::string s(command);
         if (s=="/help") message="Commands: /help /day /night /creative /survival /give 1-12 /seed /save /load";
-        else if (s=="/day") { night=false; message="Daytime enabled."; }
-        else if (s=="/night") { night=true; message="Nighttime enabled."; }
+        else if (s=="/day") { dayTime=0.25f; night=false; message="Daytime set. The cycle continues."; }
+        else if (s=="/night") { dayTime=0.75f; night=true; message="Nighttime set. The cycle continues."; }
         else if (s=="/creative") { creative=true; message="Creative mode enabled."; }
         else if (s=="/survival") { creative=false; health=20; hunger=20; stamina=100.0f; foodCount=5; message="Survival mode enabled! Collect blocks to build."; }
         else if (s=="/seed") message=TextFormat("World seed: %d",seed);
@@ -423,6 +428,7 @@ int main() {
         activeGamepad=-1;
         for(int gp=0;gp<4;gp++) if(IsGamepadAvailable(gp)) { activeGamepad=gp; break; }
         float dt=std::min(GetFrameTime(),0.05f);
+        if(screen==PLAYING) { dayTime+=dt/720.0f; if(dayTime>=1.0f) dayTime-=1.0f; night=(dayTime<0.22f || dayTime>0.78f); }
         if (messageTime>0) messageTime-=dt;
 
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
@@ -517,8 +523,7 @@ int main() {
                     } else starvationTimer=0.0f;
                     if(hunger>=18 && health<20) {
                         regenTimer+=dt;
-                        if(regenTimer>=5.0f) { regenTimer=0.0f; health=std::min(20,health+1); }
-                    } else regenTimer=0.0f;
+                        if(regenTimer>=5.0f) { regenTimer=0.0f; health=std::min(20,health+1); }                    } else regenTimer=0.0f;
                     if(stamina<100.0f && !sprinting) stamina=std::min(100.0f,stamina+12.0f*dt);
                     if(health<=0) {
                         health=20; hunger=16; stamina=100.0f;
@@ -607,12 +612,16 @@ int main() {
 
         BeginDrawing();
         if(screen==PLAYING) {
-            Color sky=night?Color{17,22,48,255}:Color{125,190,235,255};
+            float daylight=Clamp(sinf(dayTime*2.0f*PI)*0.5f+0.5f,0.0f,1.0f);
+            Color sky=ColorLerp(Color{12,18,42,255},Color{125,190,235,255},daylight);
             ClearBackground(sky);
             BeginMode3D(camera);
-            DrawSphere(night?Vector3{worldSize*.78f,24,worldSize*.18f}:Vector3{worldSize*.18f,27,worldSize*.22f},2.4f,night?Color{220,226,245,255}:Color{255,224,142,255});
+            float sunAngle=dayTime*2.0f*PI;
+            Vector3 sunPos=Vector3Add(camera.position,{cosf(sunAngle)*90.0f,sinf(sunAngle)*58.0f,24.0f});
+            DrawSphere(sunPos,2.4f,ColorLerp(Color{235,239,255,255},Color{255,224,142,255},daylight));
+            if(night) DrawSphere(Vector3Add(camera.position,{-cosf(sunAngle)*82.0f,-sinf(sunAngle)*52.0f,-18.0f}),1.8f,Color{220,228,248,255});
             // Soft, blocky cloud bands give the sky depth without expensive effects.
-            if(!night) {
+            if(daylight>0.25f) {
                 for(int cloud=0;cloud<5;cloud++) {
                     float cx=worldSize*(0.12f+cloud*0.19f);
                     float cz=worldSize*(0.22f+(cloud%2)*0.42f);
@@ -643,7 +652,7 @@ int main() {
             }
             DrawText(TextFormat("WORLD %d x %d  |  SEED %d",worldSize,worldSize,seed),286,50,14,Fade(WHITE,.85f));
             DrawRectangleRounded({(float)GetScreenWidth()-210,14,196,64},.14f,8,Fade(Color{8,14,26,255},.8f));
-            DrawText(night?"NIGHT":"DAY",GetScreenWidth()-190,24,18,night?SKYBLUE:GOLD);
+            DrawText(TextFormat("%s  %02d:%02d",night?"NIGHT":"DAY",(int)(dayTime*24.0f),(int)(fmodf(dayTime*1440.0f,60.0f))),GetScreenWidth()-190,24,18,night?SKYBLUE:GOLD);
             DrawText("ESC  PAUSE",GetScreenWidth()-190,49,14,WHITE);
             int cx=GetScreenWidth()/2, cy=GetScreenHeight()/2;
             DrawLine(cx-12,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+12,cy,WHITE);
