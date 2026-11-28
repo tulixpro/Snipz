@@ -1100,8 +1100,9 @@ int main() {
             DrawText("BLOCKLANDS",28,22,25,RAYWHITE);
             DrawFPS(29,55);
             DrawText(TextFormat("%s  |  %s%s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL",creativeFlying?" | FLY":""),286,24,18,RAYWHITE);
-            DrawText(TextFormat("CHUNKS: %d", (int)renderChunks.size()),286,47,13,Color{154,205,235,255});
-            DrawText(pickaxeEquipped?"TOOL: PICKAXE (P)":"TOOL: HAND (P)",286,70,13,GOLD);
+            DrawText(TextFormat("CHUNKS: %d  |  FPS: %d", (int)renderChunks.size(),GetFPS()),286,47,13,Color{154,205,235,255});
+            DrawText(TextFormat("POS  %.0f / %.0f / %.0f",camera.position.x,camera.position.y,camera.position.z),286,68,12,Color{190,207,222,255});
+            DrawText(pickaxeEquipped?"TOOL: PICKAXE (P)":"TOOL: HAND (P)",286,86,12,GOLD);
             if(!creative) {
                 DrawRectangleRounded({14,100,270,104},.12f,8,Fade(Color{8,14,26,255},.84f));
                 DrawText("HEALTH",28,108,13,Color{255,145,155,255});
@@ -1179,17 +1180,18 @@ int main() {
             drawBackdrop();
             float cx=GetScreenWidth()/2.0f;
             if(screen==MAIN_MENU) {
-                const float panelX=cx-230, panelY=82;
-                DrawRectangleRounded({panelX,panelY,460,470},.045f,16,Fade(Color{7,15,25,255},.88f));
-                DrawRectangleRoundedLines({panelX,panelY,460,470},.045f,16,Fade(Color{92,176,220,255},.42f));
-                DrawRectangleRounded({panelX+22,panelY+22,5,92},.5f,8,Color{63,184,255,255});
-                DrawText("BLOCKLANDS",(int)panelX+48,(int)panelY+26,38,WHITE);
-                DrawText("A WORLD OF YOUR OWN",(int)panelX+50,(int)panelY+72,14,Color{117,198,235,255});
-                DrawLine((int)panelX+28,(int)panelY+126,(int)panelX+432,(int)panelY+126,Fade(WHITE,.16f));
-                DrawText("Explore. Build. Create.",(int)panelX+30,(int)panelY+145,19,LIGHTGRAY);
-                DrawText("Your worlds are saved on this PC.",(int)panelX+30,(int)panelY+174,14,Color{166,188,207,255});
-                if(button({cx-175,panelY+218,350,54},"CREATE NEW WORLD",true)) screen=WORLD_MENU;
-                if(button({cx-175,panelY+284,350,48},"CONTINUE WORLD")) {
+                const float panelX=cx-250, panelY=64;
+                DrawRectangleRounded({panelX,panelY,500,510},.045f,18,Fade(Color{7,15,25,255},.91f));
+                DrawRectangleRoundedLines({panelX,panelY,500,510},.045f,18,Fade(Color{92,176,220,255},.55f));
+                DrawRectangleRounded({panelX+24,panelY+24,6,104},.5f,8,Color{63,184,255,255});
+                DrawText("BLOCKLANDS",(int)panelX+52,(int)panelY+25,42,Fade(BLACK,.55f));
+                DrawText("BLOCKLANDS",(int)panelX+50,(int)panelY+23,42,WHITE);
+                DrawText("YOUR WORLD. YOUR RULES.",(int)panelX+53,(int)panelY+76,14,Color{117,198,235,255});
+                DrawLine((int)panelX+30,(int)panelY+143,(int)panelX+470,(int)panelY+143,Fade(WHITE,.18f));
+                DrawText("EXPLORE  /  BUILD  /  SURVIVE",(int)panelX+32,(int)panelY+162,17,LIGHTGRAY);
+                DrawText("Create a world, discover caves and build anything.",(int)panelX+32,(int)panelY+191,13,Color{166,188,207,255});
+                if(button({cx-190,panelY+235,380,58},"CREATE NEW WORLD",true)) screen=WORLD_MENU;
+                if(button({cx-190,panelY+305,380,52},"CONTINUE WORLD")) {
                     if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
                         RebuildHeightMap(blocks,worldSize,groundHeights);
                         populateVillagers();
@@ -1204,9 +1206,9 @@ int main() {
                         message="Saved world loaded."; messageTime=3.0f;
                     } else { message="No saved world yet - create one first."; messageTime=3.0f; }
                 }
-                if(button({cx-175,panelY+344,168,44},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
-                if(button({cx+7,panelY+344,168,44},"QUIT")) break;
-                DrawText("WASD  /  MOUSE  /  CONTROLLER",(int)panelX+83,(int)panelY+423,13,Fade(WHITE,.66f));
+                if(button({cx-190,panelY+369,182,48},"SETTINGS")) { settingsReturn=MAIN_MENU; screen=SETTINGS; }
+                if(button({cx+8,panelY+369,182,48},"QUIT")) break;
+                DrawText("KEYBOARD  +  XBOX CONTROLLER",(int)panelX+120,(int)panelY+454,13,Fade(WHITE,.72f));
             } else if(screen==PAUSED) {
                 DrawText("PAUSED",(int)cx-85,126,34,WHITE);
                 if(button({cx-155,215,310,56},"RESUME",true)) { screen=PLAYING; DisableCursor(); }
