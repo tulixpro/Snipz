@@ -12,6 +12,7 @@
 
 struct Block { Vector3 p; Color c; };
 struct Animal { Vector3 p; Vector3 dir; float turnTimer; int type; };
+struct CaveMob { Vector3 p; float attackTimer; int hp; };
 
 
 static float noise2(int x, int z, int seed) {
@@ -439,6 +440,29 @@ int main() {
                                noise2(i,23,seed)*4.0f,type});
         }
     };
+    std::vector<CaveMob> caveMobs;
+    auto populateCaveMobs = [&]() {
+        caveMobs.clear();
+        if(groundHeights.empty()) return;
+        int targetCount=std::min(16,std::max(8,worldSize/48));
+        for(int i=0;i<targetCount*18 && (int)caveMobs.size()<targetCount;i++) {
+            int x=5+(int)(noise2(i+seed,503,seed+313)*(worldSize-10));
+            int z=5+(int)(noise2(i+seed,907,seed+419)*(worldSize-10));
+            int top=groundHeights[x*worldSize+z];
+            if(top<10) continue;
+            for(int y=5;y<top-3;y++) {
+                float a=smoothNoise2(x*0.082f+y*0.115f,z*0.082f-y*0.091f,seed+y*41);
+                float b=smoothNoise2(x*0.047f-y*0.073f,z*0.047f+y*0.061f,seed+700+y*23);
+                float c=smoothNoise2(x*0.031f+y*0.043f,z*0.031f-y*0.057f,seed+1900+y*13);
+                float n=smoothNoise2(x*0.14f+y*0.19f,z*0.14f-y*0.16f,seed+2900+y*29);
+                bool open=(a>0.735f && b>0.455f) || (c>0.735f && b>0.43f && n>0.39f);
+                if(open) {
+                    caveMobs.push_back({{(float)x,(float)y+0.55f,(float)z},1.0f,3});
+                    break;
+                }
+            }
+        }
+    };
     auto startWorld = [&]() {
         GenerateWorld(blocks,worldSize,worldType,seed);
         RebuildHeightMap(blocks,worldSize,groundHeights);
@@ -524,6 +548,7 @@ int main() {
         for(int gp=0;gp<4;gp++) if(IsGamepadAvailable(gp)) { activeGamepad=gp; break; }
         float dt=std::min(GetFrameTime(),0.05f);
         if(screen==PLAYING && !blocks.empty() && animals.empty()) populateAnimals();
+        if(screen==PLAYING && !blocks.empty() && caveMobs.empty() && !creative) populateCaveMobs();
         if(screen==PLAYING) {
             for(auto& animal:animals) {
                 animal.turnTimer-=dt;
@@ -538,11 +563,45 @@ int main() {
                 animal.p.y=(float)groundHeights[ax*worldSize+az]+0.55f;
                 if(animal.p.y<19.0f || animal.p.y>50.0f) animal.dir=Vector3Scale(animal.dir,-1.0f);
             }
-            dayTime+=dt/720.0f; if(dayTime>=1.0f) dayTime-=1.0f; night=(dayTime<0.22f || dayTime>0.78f); }
+            dayTime+=dt/720.0f; if(dayTime>=1.0f) dayTime-=1.0f; night=(dayTime<0.22f || dayTime>0.78f);
+            if(!creative) {
+                for(auto it=caveMobs.begin();it!=caveMobs.end();) {
+                    Vector3 delta=Vector3Subtract(camera.position,it->p);
+                    float dist=Vector3Length(delta);
+                    if(dist<20.0f) {
+                        if(dist>1.45f) {
+                            Vector3 step=Vector3Scale(Vector3Normalize({delta.x,0,delta.z}),dt*1.25f);
+                            it->p.x+=step.x; it->p.z+=step.z;
+                        } else {
+                            it->attackTimer-=dt;
+                            if(it->attackTimer<=0.0f) {
+                                health=std::max(0,health-2);
+                                it->attackTimer=1.35f;
+                                message="A cave zombie hit you! -2 hearts points";
+                                messageTime=1.8f;
+                            }
+                        }
+                    }
+                    if(it->hp<=0) it=caveMobs.erase(it); else ++it;
+                }
+            }
+        }
         if (messageTime>0) messageTime-=dt;
 
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
             if(IsKeyPressed(KEY_E) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
+            if(!creative && (IsKeyPressed(KEY_F) || (activeGamepad>=0 && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_LEFT)))) {
+                int target=-1; float best=3.6f;
+                for(int i=0;i<(int)caveMobs.size();i++) {
+                    float d=Vector3Distance(camera.position,caveMobs[i].p);
+                    if(d<best) { best=d; target=i; }
+                }
+                if(target>=0) {
+                    caveMobs[target].hp--;
+                    message=caveMobs[target].hp<=0?"Zombie defeated!":"Zombie hit!";
+                    messageTime=1.4f;
+                } else { message="No zombie nearby."; messageTime=1.2f; }
+            }
         }
         else if (screen==PLAYING && inventoryOpen) {
             if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
@@ -568,7 +627,7 @@ int main() {
                 else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
             }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
-            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | Hold LMB mine | RMB build | C craft table"; messageTime=5; }
+            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | F attack nearby cave zombies | Hold LMB mine | RMB build"; messageTime=5; }
             if(IsKeyPressed(KEY_C) && !creative) { if(blockCounts[9]>=4) { blockCounts[9]-=4; blockCounts[11]++; message="Crafted 1 crafting table from 4 wood."; } else { message="Need 4 wood to craft a crafting table."; } messageTime=3.0f; }
             if (!commandOpen) {
                 Vector2 mouse=GetMouseDelta();
@@ -748,6 +807,20 @@ int main() {
             }
             
             if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
+            // Simple voxel cave zombies.
+            for(const auto& mob:caveMobs) {
+                Vector3 p=mob.p;
+                DrawCubeV({p.x,p.y+0.42f,p.z},{0.66f,0.82f,0.38f},Color{63,139,78,255});
+                DrawCubeV({p.x,p.y+1.02f,p.z},{0.48f,0.48f,0.44f},Color{77,157,91,255});
+                DrawCubeV({p.x-0.13f,p.y+1.08f,p.z-0.225f},{0.09f,0.08f,0.035f},WHITE);
+                DrawCubeV({p.x+0.13f,p.y+1.08f,p.z-0.225f},{0.09f,0.08f,0.035f},WHITE);
+                DrawCubeV({p.x-0.13f,p.y+1.08f,p.z-0.245f},{0.04f,0.04f,0.02f},RED);
+                DrawCubeV({p.x+0.13f,p.y+1.08f,p.z-0.245f},{0.04f,0.04f,0.02f},RED);
+                DrawCubeV({p.x-0.43f,p.y+0.45f,p.z},{0.20f,0.62f,0.20f},Color{63,139,78,255});
+                DrawCubeV({p.x+0.43f,p.y+0.45f,p.z},{0.20f,0.62f,0.20f},Color{63,139,78,255});
+                DrawCubeV({p.x-0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},Color{48,65,112,255});
+                DrawCubeV({p.x+0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},Color{48,65,112,255});
+            }
             // Friendly wandering voxel animals: sheep, cows, pigs and chickens.
             for(const auto& animal:animals) {
                 Vector3 p=animal.p;
@@ -774,19 +847,24 @@ int main() {
             DrawFPS(29,55);
             DrawText(TextFormat("%s  |  %s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL"),286,24,18,RAYWHITE);
             if(!creative) {
-                DrawRectangleRounded({14,100,270,96},.12f,8,Fade(Color{8,14,26,255},.84f));
-                DrawText(TextFormat("HEALTH  %d / 20",health),28,109,15,Color{255,125,125,255});
-                DrawRectangle(28,130,230,10,Color{65,35,42,255});
-                DrawRectangle(28,130,(int)(230.0f*health/20.0f),10,Color{220,65,75,255});
-                DrawText(TextFormat("HUNGER  %d / 20   |   APPLES %d",hunger,foodCount),28,148,14,Color{255,205,120,255});
-                DrawRectangle(28,168,230,8,Color{65,52,35,255});
-                DrawRectangle(28,168,(int)(230.0f*hunger/20.0f),8,Color{215,151,60,255});
-                DrawText(TextFormat("STAMINA  %d%%", (int)stamina),28,180,11,SKYBLUE);
+                DrawRectangleRounded({14,100,270,104},.12f,8,Fade(Color{8,14,26,255},.84f));
+                DrawText("HEALTH",28,108,13,Color{255,145,155,255});
+                for(int heart=0;heart<10;heart++) {
+                    int hx=30+heart*22, hy=130;
+                    Color hc=(health>=heart*2+2)?Color{235,62,82,255}:((health==heart*2+1)?Color{235,137,91,255}:Color{75,55,67,255});
+                    DrawCircle(hx+5,hy+5,5,hc); DrawCircle(hx+13,hy+5,5,hc);
+                    DrawTriangle({(float)hx,(float)hy+7},{(float)hx+18,(float)hy+7},{(float)hx+9,(float)hy+19},hc);
+                }
+                DrawText(TextFormat("HUNGER  %d / 20   |   APPLES %d",hunger,foodCount),28,154,14,Color{255,205,120,255});
+                DrawRectangle(28,174,230,8,Color{65,52,35,255});
+                DrawRectangle(28,174,(int)(230.0f*hunger/20.0f),8,Color{215,151,60,255});
+                DrawText(TextFormat("STAMINA  %d%%", (int)stamina),28,187,11,SKYBLUE);
             }
             DrawText(TextFormat("WORLD %d x %d  |  SEED %d",worldSize,worldSize,seed),286,50,14,Fade(WHITE,.85f));
             DrawRectangleRounded({(float)GetScreenWidth()-210,14,196,64},.14f,8,Fade(Color{8,14,26,255},.8f));
             DrawText(TextFormat("%s  %02d:%02d",night?"NIGHT":"DAY",(int)(dayTime*24.0f),(int)(fmodf(dayTime*1440.0f,60.0f))),GetScreenWidth()-190,24,18,night?SKYBLUE:GOLD);
             DrawText("ESC  PAUSE",GetScreenWidth()-190,49,14,WHITE);
+            if(!creative) DrawText(TextFormat("CAVE ZOMBIES: %d  |  F ATTACK", (int)caveMobs.size()),GetScreenWidth()-310,88,13,Color{145,225,155,255});
             int cx=GetScreenWidth()/2, cy=GetScreenHeight()/2;
             DrawLine(cx-12,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+12,cy,WHITE);
             DrawLine(cx,cy-12,cx,cy-4,WHITE); DrawLine(cx,cy+4,cx,cy+12,WHITE);
