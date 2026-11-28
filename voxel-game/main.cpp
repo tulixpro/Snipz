@@ -71,24 +71,27 @@ static Texture2D CreateBlockAtlas() {
     for(int type=0;type<24;type++) {
         int ox=(type%8)*32, oy=(type/8)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
-            int gx=x/4, gy=y/4;
+            int gx=x/2, gy=y/2;
             float n=noise2(gx+type*37,gy+type*19,4242);
-            float shade=0.91f+n*0.17f;
+            float detail=noise2(x+type*71,y+type*43,8181);
+            float shade=0.88f+n*0.19f+(detail-0.5f)*0.10f;
             Color p=bases[type];
             if(type==0) {
                 // Grass: calm green surface with a few darker pixel clusters.
-                if(n<0.20f) shade=0.78f;
-                if(n>0.88f) shade=1.12f;
+                if(n<0.20f) shade=0.76f;
+                if(n>0.88f) shade=1.14f;
+                if(((x*13+y*7)%47)<2) shade=0.62f;
             } else if(type==1) {
-                if(n<0.24f) shade=0.76f;
-                if(n>0.86f) shade=1.13f;
+                if(n<0.24f) shade=0.73f;
+                if(n>0.86f) shade=1.16f;
+                if(((x*5+y*11)%31)<2) shade=0.62f;
             } else if(type==2) {
-                if(((gx*7+gy*11)%13)==0) shade=0.58f;
-                else if(((gx*3+gy*5)%9)==0) shade=1.22f;
+                if(((gx*7+gy*11)%19)==0) shade=0.52f;
+                else if(((gx*3+gy*5)%13)==0) shade=1.28f;
                 else if(n<0.20f) shade=0.82f;
             } else if(type==3) {
-                if(((gx*5+gy*3)%11)==0) shade=0.72f;
-                else if(((gx*7+gy)%13)==0) shade=1.18f;
+                if(((gx*5+gy*3)%17)==0) shade=0.68f;
+                else if(((gx*7+gy)%19)==0) shade=1.20f;
             } else if(type==4) {
                 shade=0.78f+n*0.18f;
                 if((y%9==2 || y%9==3) && (x%16)<11) shade=1.30f;
@@ -122,8 +125,8 @@ static Texture2D CreateBlockAtlas() {
                 if(y<8 && (x%8==0)) shade=0.62f;
             } else if(type==16) {
                 // Grass side: a crisp green turf cap above a dirt face, like classic voxel blocks.
-                if(y<7) { p=Color{91,158,54,255}; if(n>0.72f) shade=1.15f; }
-                else { p=Color{126,91,57,255}; shade=0.84f+n*0.28f; }
+                if(y<7) { p=Color{91,158,54,255}; if(n>0.72f) shade=1.18f; if((x%13==2 && y<5) || (x%17==10 && y<4)) shade=0.62f; }
+                else { p=Color{126,91,57,255}; shade=0.80f+n*0.32f; if(detail>0.91f) shade=1.24f; }
                 if(y>=7 && ((gx*5+gy*3)%11)==0) shade=0.62f;
             } else if(type==17) {
                 // Log end grain with visible square-ish growth rings.
