@@ -3,39 +3,49 @@
 #include <shellapi.h>
 #include <string>
 #include <cstring>
-static HWND statusText;
-static HFONT titleFont, bodyFont;
+
+static const COLORREF BG=RGB(12,18,31), PANEL=RGB(23,33,52), PANEL2=RGB(30,45,68), TEXT=RGB(235,242,252), MUTED=RGB(155,174,199), ACCENT=RGB(91,160,255), GREEN=RGB(91,205,151);
+static HFONT titleFont, subFont, bodyFont, smallFont;
+static std::string status="Wahle ein Spiel aus und starte direkt.";
+static RECT blockCard={34,178,596,330}, cityCard={34,350,596,502};
+static bool hit(POINT p,RECT r){return p.x>=r.left&&p.x<=r.right&&p.y>=r.top&&p.y<=r.bottom;}
 static void launchGame(HWND hwnd,const char* exe,const char* name){
  char path[MAX_PATH]={0};GetModuleFileNameA(nullptr,path,MAX_PATH);char* slash=strrchr(path,'\\');if(slash)*slash=0;
  std::string full=std::string(path)+"\\"+exe;
- DWORD attr=GetFileAttributesA(full.c_str());
- if(attr==INVALID_FILE_ATTRIBUTES){SetWindowTextA(statusText,(std::string(name)+" is not installed beside SnipzLauncher.exe.").c_str());return;}
+ if(GetFileAttributesA(full.c_str())==INVALID_FILE_ATTRIBUTES){status=std::string(name)+" fehlt im Launcher-Ordner.";InvalidateRect(hwnd,nullptr,FALSE);return;}
  HINSTANCE r=ShellExecuteA(hwnd,"open",full.c_str(),nullptr,path,SW_SHOWNORMAL);
- if((INT_PTR)r<=32)SetWindowTextA(statusText,"Could not start the game. Check that the EXE is present.");
- else SetWindowTextA(statusText,(std::string("Starting ")+name+"...").c_str());
+ status=(INT_PTR)r<=32?"Spiel konnte nicht gestartet werden.":std::string(name)+" wird gestartet...";
+ InvalidateRect(hwnd,nullptr,FALSE);
+}
+static void text(HDC dc,const char* s,int x,int y,HFONT f,COLORREF color){SetBkMode(dc,TRANSPARENT);SetTextColor(dc,color);SelectObject(dc,f);TextOutA(dc,x,y,s,(int)strlen(s));}
+static void card(HDC dc,RECT r,COLORREF edge,const char* tag,const char* name,const char* desc,const char* button){
+ HBRUSH b=CreateSolidBrush(PANEL);HPEN p=CreatePen(PS_SOLID,2,edge);HGDIOBJ ob=SelectObject(dc,b),op=SelectObject(dc,p);
+ RoundRect(dc,r.left,r.top,r.right,r.bottom,18,18);SelectObject(dc,ob);SelectObject(dc,op);DeleteObject(b);DeleteObject(p);
+ text(dc,tag,r.left+24,r.top+20,smallFont,edge);text(dc,name,r.left+24,r.top+51,titleFont,TEXT);text(dc,desc,r.left+24,r.top+101,bodyFont,MUTED);
+ RECT br={r.right-180,r.bottom-62,r.right-22,r.bottom-18};HBRUSH bb=CreateSolidBrush(edge);ob=SelectObject(dc,bb);RoundRect(dc,br.left,br.top,br.right,br.bottom,12,12);SelectObject(dc,ob);DeleteObject(bb);
+ text(dc,button,br.left+28,br.top+12,bodyFont,BG);
 }
 static LRESULT CALLBACK Proc(HWND w,UINT m,WPARAM a,LPARAM b){
  switch(m){
- case WM_CREATE:{
-  titleFont=CreateFontA(34,0,0,0,FW_BOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,"Segoe UI");
-  bodyFont=CreateFontA(17,0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,"Segoe UI");
-  auto label=[&](const char*t,int x,int y,int ww,int hh,HFONT f){HWND c=CreateWindowA("STATIC",t,WS_CHILD|WS_VISIBLE,x,y,ww,hh,w,nullptr,nullptr,nullptr);SendMessageA(c,WM_SETFONT,(WPARAM)f,TRUE);return c;};
-  label("SNIPZ",30,22,360,46,titleFont);label("GAME LAUNCHER",34,67,360,26,bodyFont);
-  label("YOUR GAMES",34,116,360,25,bodyFont);
-  HWND b1=CreateWindowA("BUTTON","PLAY  |  BLOCKLANDS",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,34,153,390,58,w,(HMENU)101,nullptr,nullptr);SendMessageA(b1,WM_SETFONT,(WPARAM)bodyFont,TRUE);
-  label("Voxel sandbox  -  explore, build and survive",44,215,390,25,bodyFont);
-  HWND b2=CreateWindowA("BUTTON","PLAY  |  SNIPZ CITY",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,34,260,390,58,w,(HMENU)102,nullptr,nullptr);SendMessageA(b2,WM_SETFONT,(WPARAM)bodyFont,TRUE);
-  label("City builder  -  roads, zones and growing neighborhoods",44,322,410,40,bodyFont);
-  statusText=label("Select a game to launch.",34,385,420,42,bodyFont);
-  label("Snipz Launcher  |  Free indie games",34,450,390,24,bodyFont);
-  return 0;}
- case WM_COMMAND:if(LOWORD(a)==101)launchGame(w,"Blocklands.exe","Blocklands");if(LOWORD(a)==102)launchGame(w,"SnipzCity.exe","Snipz City");return 0;
- case WM_CTLCOLORSTATIC:{HDC dc=(HDC)a;SetTextColor(dc,RGB(224,233,246));SetBkColor(dc,RGB(20,29,44));return (LRESULT)GetStockObject(NULL_BRUSH);}
- case WM_DESTROY:DeleteObject(titleFont);DeleteObject(bodyFont);PostQuitMessage(0);return 0;
+ case WM_CREATE:
+  titleFont=CreateFontA(27,0,0,0,FW_BOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,"Segoe UI");
+  subFont=CreateFontA(15,0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,"Segoe UI");
+  bodyFont=CreateFontA(17,0,0,0,FW_BOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,"Segoe UI");
+  smallFont=CreateFontA(11,0,0,0,FW_BOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,"Segoe UI");
+  return 0;
+ case WM_ERASEBKGND:return 1;
+ case WM_PAINT:{PAINTSTRUCT ps;HDC dc=BeginPaint(w,&ps);RECT rc;GetClientRect(w,&rc);HBRUSH bg=CreateSolidBrush(BG);FillRect(dc,&rc,bg);DeleteObject(bg);
+  text(dc,"SNIPZ",34,27,titleFont,TEXT);text(dc,"GAME HUB   /   DEINE SPIELE",36,68,smallFont,ACCENT);text(dc,"Wahle ein Spiel",34,116,subFont,MUTED);
+  card(dc,blockCard,ACCENT,"01   /   VOXEL SANDBOX","BLOCKLANDS","Erkunden, bauen und in einer Voxel-Welt uberleben.","SPIELEN");
+  card(dc,cityCard,GREEN,"02   /   CITY BUILDER","SNIPZ CITY","Strassen planen, Gebiete ausweisen und eine Stadt entwickeln.","SPIELEN");
+  text(dc,status.c_str(),36,530,subFont,TEXT);text(dc,"Beide Spiele liegen als EXE-Dateien neben diesem Launcher.",36,565,subFont,MUTED);
+  EndPaint(w,&ps);return 0;}
+ case WM_LBUTTONUP:{POINT p={GET_X_LPARAM(b),GET_Y_LPARAM(b)};if(hit(p,blockCard))launchGame(w,"Blocklands.exe","Blocklands");else if(hit(p,cityCard))launchGame(w,"SnipzCity.exe","Snipz City");return 0;}
+ case WM_DESTROY:DeleteObject(titleFont);DeleteObject(subFont);DeleteObject(bodyFont);DeleteObject(smallFont);PostQuitMessage(0);return 0;
  }return DefWindowProcA(w,m,a,b);
 }
 int WINAPI WinMain(HINSTANCE i,HINSTANCE,LPSTR,int show){
- WNDCLASSA c={};c.lpfnWndProc=Proc;c.hInstance=i;c.lpszClassName="SnipzLauncher";c.hCursor=LoadCursor(nullptr,IDC_ARROW);c.hbrBackground=CreateSolidBrush(RGB(20,29,44));RegisterClassA(&c);
- HWND w=CreateWindowA(c.lpszClassName,"SNIPZ Launcher",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,500,540,nullptr,nullptr,i,nullptr);
- if(!w)return 1;ShowWindow(w,show);MSG msg;while(GetMessageA(&msg,nullptr,0,0)>0){TranslateMessage(&msg);DispatchMessageA(&msg);}return 0;
+ WNDCLASSA c={};c.lpfnWndProc=Proc;c.hInstance=i;c.lpszClassName="SnipzLauncherV2";c.hCursor=LoadCursor(nullptr,IDC_ARROW);c.hbrBackground=CreateSolidBrush(BG);RegisterClassA(&c);
+ HWND w=CreateWindowA(c.lpszClassName,"Snipz Launcher",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,CW_USEDEFAULT,CW_USEDEFAULT,680,660,nullptr,nullptr,i,nullptr);
+ if(!w)return 1;ShowWindow(w,show);UpdateWindow(w);MSG msg;while(GetMessageA(&msg,nullptr,0,0)>0){TranslateMessage(&msg);DispatchMessageA(&msg);}return 0;
 }
