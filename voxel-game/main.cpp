@@ -1026,12 +1026,23 @@ int main() {
                     float cz=6.0f+noise2(cloud*29+seed,73,seed+233)*(worldSize-12);
                     float cy=48.0f+(cloud%3)*3.0f;
                     Color cloudColor=Color{244,249,255,220};
-                    DrawCube({cx,cy,cz},8.0f,1.0f,4.0f,cloudColor);
-                    DrawCube({cx+2.8f,cy+0.25f,cz},5.2f,0.9f,3.6f,cloudColor);
-                    DrawCube({cx-2.6f,cy+0.12f,cz+0.5f},4.6f,0.8f,3.2f,cloudColor);
+                    DrawCube({cx,cy,cz},7.5f,1.0f,4.2f,cloudColor);
+                    DrawCube({cx+2.8f,cy+0.25f,cz},5.2f,1.0f,3.8f,cloudColor);
+                    DrawCube({cx-2.6f,cy+0.12f,cz+0.5f},4.6f,0.9f,3.4f,cloudColor);
+                    DrawCube({cx+0.6f,cy+0.32f,cz+1.6f},4.0f,0.8f,3.0f,cloudColor);
+                    DrawCube({cx-1.0f,cy+0.22f,cz-1.5f},4.2f,0.8f,2.8f,cloudColor);
                 }
             }
             
+            if(daylight<0.24f) {
+                for(int star=0;star<42;star++) {
+                    float sx=(noise2(star*31+seed,star*7,seed+811)-0.5f)*150.0f;
+                    float sy=27.0f+noise2(star*13,star*47+seed,seed+991)*45.0f;
+                    float sz=(noise2(star*53,star*19+seed,seed+1171)-0.5f)*150.0f;
+                    float twinkle=0.55f+0.45f*sinf(dayTime*18.0f+star);
+                    DrawSphere(Vector3Add(camera.position,{sx,sy,sz}),0.10f+0.035f*twinkle,Fade(Color{225,235,255,255},twinkle));
+                }
+            }
             for(const auto& chunk:renderChunks) DrawModel(chunk.model,Vector3Zero(),1.0f,WHITE);
             // Cave mobs: green zombies and pale skeletons.
             for(const auto& mob:caveMobs) {
