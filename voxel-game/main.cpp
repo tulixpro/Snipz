@@ -64,7 +64,7 @@ static Texture2D CreateBlockAtlas() {
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             int gx=x/4, gy=y/4;
             float n=noise2(gx+type*37,gy+type*19,4242);
-            float shade=0.94f+n*0.12f;
+            float shade=0.91f+n*0.17f;
             Color p=bases[type];
             if(type==0) {
                 // Grass: calm green surface with a few darker pixel clusters.
@@ -74,33 +74,43 @@ static Texture2D CreateBlockAtlas() {
                 if(n<0.24f) shade=0.76f;
                 if(n>0.86f) shade=1.13f;
             } else if(type==2) {
-                if(n<0.22f) shade=0.78f;
-                if(n>0.90f) shade=1.12f;
+                if(((gx*7+gy*11)%13)==0) shade=0.58f;
+                else if(((gx*3+gy*5)%9)==0) shade=1.22f;
+                else if(n<0.20f) shade=0.82f;
             } else if(type==3) {
-                if(n<0.18f) shade=0.82f;
-                if(n>0.87f) shade=1.10f;
+                if(((gx*5+gy*3)%11)==0) shade=0.72f;
+                else if(((gx*7+gy)%13)==0) shade=1.18f;
             } else if(type==4) {
-                shade=0.88f+n*0.16f;
-                if((gy%3==0) && (gx%4==1 || gx%4==2)) shade=1.13f;
+                shade=0.78f+n*0.18f;
+                if((y%9==2 || y%9==3) && (x%16)<11) shade=1.30f;
             } else if(type==5) {
-                if(n<0.22f) shade=0.88f;
+                if(((gx*9+gy*5)%17)==0) shade=0.72f;
+                else if(n<0.22f) shade=0.91f;
             } else if(type==6) {
-                shade=0.72f+n*0.34f;
-                if(n<0.30f) shade=0.55f;
+                shade=0.74f+n*0.38f;
+                if(((gx*5+gy*7)%7)==0) shade=0.48f;
+                else if(n>0.82f) shade=1.22f;
             } else if(type==7) {
                 // Simple staggered brick courses with clear mortar lines.
                 int row=y/8, localY=y%8, shift=(row%2)*8;
                 if(localY==0 || ((x+shift)%16==0)) shade=0.48f;
                 else if(n>0.82f) shade=1.08f;
             } else if(type==8) {
-                shade=0.82f+n*0.30f;
-                if(((gx+gy*2)%5)==0) shade=1.28f;
+                shade=0.72f+n*0.26f;
+                if(((gx+gy*2)%5)==0 || ((gx*3+gy)%11)==0) { shade=1.45f; p.r=255; p.g=190; p.b=48; }
             } else if(type==9) {
-                shade=0.82f+n*0.28f;
-                if(gx%4==0) shade*=0.78f;
+                shade=0.82f+n*0.24f;
+                if(gx%4==0 || gx%4==1) shade*=0.72f;
+                if((gx==3 || gx==4) && (gy==3 || gy==4)) shade=1.20f;
             } else if(type==10) {
-                shade=0.82f+n*0.22f;
-                if((gx+gy)%4==0) { p.r=255; p.g=220; p.b=90; }
+                shade=0.78f+n*0.22f;
+                if((gx==3 || gx==4) && (gy==3 || gy==4)) { p.r=255; p.g=220; p.b=75; }
+                else if((gx==1 || gx==6) && (gy==3 || gy==4)) shade=1.20f;
+            } else if(type==11) {
+                shade=0.88f+n*0.16f;
+                if(x<3 || x>28 || y<3 || y>28) shade=0.55f;
+                else if((x/5+y/5)%2==0) shade=1.18f;
+                if(y<8 && (x%8==0)) shade=0.62f;
             }
             p.r=(unsigned char)Clamp(p.r*shade,0,255);
             p.g=(unsigned char)Clamp(p.g*shade,0,255);
@@ -217,8 +227,7 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
                 int crownY=h+trunkHeight-1;
                 for(int dy=-1;dy<=2;dy++) {
                     int radius=(dy==2)?1:2;
-                    for(int dx=-radius;dx<=radius;dx++) for(int dz=-radius;dz<=radius;dz++) {
-                        if(dx==0 && dz==0 && dy<1) continue;
+                    for(int dx=-radius;dx<=radius;dx++) for(int dz=-radius;dz<=radius;dz++) {                        if(dx==0 && dz==0 && dy<1) continue;
                         if(std::abs(dx)+std::abs(dz)>radius+1) continue;
                         if(noise2(x+dx*13+dy*7,z+dz*17-dy*5,seed+211)<0.10f) continue;
                         blocks.push_back({{(float)(x+dx),(float)(crownY+dy),(float)(z+dz)},palette[6]});
@@ -317,7 +326,7 @@ int main() {
     int menuFPS = fpsLimit;
     int activeGamepad=-1;
     bool previousPadMine=false, previousPadPlace=false;
-    float miningTimer=0.0f;
+    float miningTimer=0.0f, miningDuration=0.65f;
     int miningTarget=-1;
 
     Camera3D camera={};
@@ -437,8 +446,7 @@ int main() {
             if((activeGamepad>=0)) {
                 if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_LEFT)) inventoryCursor=std::max(0,inventoryCursor-1);
                 if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+1);
-                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_UP)) inventoryCursor=std::max(0,inventoryCursor-3);
-                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+3);
+                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_UP)) inventoryCursor=std::max(0,inventoryCursor-3);                if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_DOWN)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+3);
                 if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) selected=inventoryCursor;
             }
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -574,9 +582,15 @@ int main() {
                         if(c.hit && c.distance<=8.0f && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
                     }
                     if(hit>=0 && minePressed) {
-                        if(miningTarget!=hit) { miningTarget=hit; miningTimer=0.0f; }
+                        if(miningTarget!=hit) {
+                            miningTarget=hit; miningTimer=0.0f;
+                            int bt=0;
+                            for(int t=0;t<paletteCount;t++) if(blocks[hit].c.r==palette[t].r && blocks[hit].c.g==palette[t].g && blocks[hit].c.b==palette[t].b) { bt=t; break; }
+                            const float hardness[12]={0.42f,0.48f,1.35f,0.38f,0.55f,0.30f,0.24f,0.95f,0.65f,0.72f,0.18f,0.82f};
+                            miningDuration=hardness[bt];
+                        }
                         miningTimer+=dt;
-                        if(miningTimer>=0.22f) {
+                        if(miningTimer>=miningDuration) {
                             if(!creative) { for(int bt=0;bt<paletteCount;bt++) if(blocks[hit].c.r==palette[bt].r && blocks[hit].c.g==palette[bt].g && blocks[hit].c.b==palette[bt].b) { blockCounts[bt]++; break; } }
                             blocks.erase(blocks.begin()+hit);
                             miningTarget=-1; miningTimer=0.0f;
@@ -655,10 +669,14 @@ int main() {
             DrawLine(cx-12,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+12,cy,WHITE);
             DrawLine(cx,cy-12,cx,cy-4,WHITE); DrawLine(cx,cy+4,cx,cy+12,WHITE);
             if(miningTimer>0.0f) {
-                float progress=Clamp(miningTimer/0.22f,0.0f,1.0f);
-                DrawRectangle(cx-34,cy+22,68,7,Fade(BLACK,.72f));
-                DrawRectangle(cx-34,cy+22,(int)(68.0f*progress),7,Color{255,205,92,255});
-            }
+                float progress=Clamp(miningTimer/miningDuration,0.0f,1.0f);
+                DrawRectangle(cx-38,cy+22,76,8,Fade(BLACK,.78f));
+                DrawRectangle(cx-38,cy+22,(int)(76.0f*progress),8,Color{255,205,92,255});
+                int crackStage=(int)(progress*6.0f);
+                for(int k=0;k<crackStage;k++) {
+                    int ox=(k%3)*9-9, oy=(k/3)*4;
+                    DrawLine(cx+ox,cy+33+oy,cx+ox+5,cy+37+oy,Color{35,35,38,220});
+                }            }
             int start=(GetScreenWidth()-paletteCount*62)/2, hotY=GetScreenHeight()-76;
             DrawRectangleRounded({(float)start-8,(float)hotY-7,(float)paletteCount*62+16,64},.12f,8,Fade(BLACK,.72f));
             for(int i=0;i<paletteCount;i++) {
