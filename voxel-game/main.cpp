@@ -917,24 +917,41 @@ int main() {
         BeginDrawing();
         if(screen==PLAYING) {
             float daylight=Clamp(sinf(dayTime*2.0f*PI)*0.5f+0.5f,0.0f,1.0f);
-            Color sky=ColorLerp(Color{12,18,42,255},Color{125,190,235,255},daylight);
+            Color sky=ColorLerp(Color{8,13,34,255},Color{111,181,232,255},daylight);
             ClearBackground(sky);
+            // Layered horizon gradient gives the sky more depth without a costly shader.
+            DrawRectangleGradientV(0,0,GetScreenWidth(),GetScreenHeight(),
+                ColorLerp(Color{28,39,76,255},Color{115,181,226,255},daylight),
+                ColorLerp(Color{9,17,39,255},Color{191,218,237,255},daylight));
             BeginMode3D(camera);
             float sunAngle=dayTime*2.0f*PI;
             Vector3 sunPos=Vector3Add(camera.position,{cosf(sunAngle)*90.0f,sinf(sunAngle)*58.0f,24.0f});
             DrawSphere(sunPos,2.4f,ColorLerp(Color{235,239,255,255},Color{255,224,142,255},daylight));
             if(night) DrawSphere(Vector3Add(camera.position,{-cosf(sunAngle)*82.0f,-sinf(sunAngle)*52.0f,-18.0f}),1.8f,Color{220,228,248,255});
-            // Soft, blocky cloud bands give the sky depth without expensive effects.
-            if(daylight>0.25f) {
-                for(int cloud=0;cloud<5;cloud++) {
-                    float cx=worldSize*(0.12f+cloud*0.19f);
-                    float cz=worldSize*(0.22f+(cloud%2)*0.42f);
-                    float cy=31.0f+(cloud%3)*2.0f;
-                    Color cloudColor=Color{244,249,255,235};
-                    DrawCube({cx,cy,cz},9.0f,1.3f,4.0f,cloudColor);
-                    DrawCube({cx+3.2f,cy+0.35f,cz},5.0f,1.0f,3.2f,cloudColor);
-                    DrawCube({cx-3.0f,cy+0.15f,cz+0.4f},4.5f,0.9f,3.0f,cloudColor);
+            // Camera-relative voxel clouds stay visible while exploring the map.
+            if(daylight>0.18f) {
+                for(int cloud=0;cloud<9;cloud++) {
+                    float a=(float)cloud*0.698f+(float)dayTime*0.18f;
+                    float radius=27.0f+(cloud%3)*8.0f;
+                    float cx=camera.position.x+cosf(a)*radius;
+                    float cz=camera.position.z+sinf(a)*radius;
+                    float cy=39.0f+(cloud%4)*2.2f;
+                    Color cloudColor=Color{244,249,255,225};
+                    DrawCube({cx,cy,cz},8.0f,1.15f,4.0f,cloudColor);
+                    DrawCube({cx+2.8f,cy+0.35f,cz},5.2f,1.0f,3.6f,cloudColor);
+                    DrawCube({cx-2.6f,cy+0.15f,cz+0.5f},4.6f,0.9f,3.2f,cloudColor);
                 }
+            }
+            // Distant layered blocky mountain silhouettes add a stronger horizon.
+            for(int ridge=0;ridge<12;ridge++) {
+                float a=(float)ridge*(2.0f*PI/12.0f);
+                float dist=58.0f+(ridge%3)*5.0f;
+                float mx=camera.position.x+cosf(a)*dist;
+                float mz=camera.position.z+sinf(a)*dist;
+                float mh=12.0f+(ridge%4)*4.0f;
+                Color mountain=ColorLerp(Color{36,52,79,255},Color{103,143,169,255},daylight);
+                DrawCube({mx,17.0f+mh*0.5f,mz},18.0f,mh,15.0f,mountain);
+                DrawCube({mx,17.0f+mh+1.0f,mz},10.0f,3.0f,9.0f,ColorLerp(Color{67,82,111,255},Color{157,181,194,255},daylight));
             }
             
             if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
@@ -1015,8 +1032,11 @@ int main() {
             DrawText("ESC  PAUSE",GetScreenWidth()-190,49,14,WHITE);
             if(!creative) DrawText(TextFormat("CAVE MOBS: %d  |  ZOMBIES + SKELETONS", (int)caveMobs.size()),GetScreenWidth()-330,88,13,Color{145,225,155,255});
             int cx=GetScreenWidth()/2, cy=GetScreenHeight()/2;
-            DrawLine(cx-12,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+12,cy,WHITE);
-            DrawLine(cx,cy-12,cx,cy-4,WHITE); DrawLine(cx,cy+4,cx,cy+12,WHITE);
+            DrawCircle(cx,cy,3.2f,Fade(BLACK,.55f));
+            DrawLine(cx-13,cy+1,cx-5,cy+1,Fade(BLACK,.55f)); DrawLine(cx+5,cy+1,cx+13,cy+1,Fade(BLACK,.55f));
+            DrawLine(cx+1,cy-13,cx+1,cy-5,Fade(BLACK,.55f)); DrawLine(cx+1,cy+5,cx+1,cy+13,Fade(BLACK,.55f));
+            DrawLine(cx-12,cy,cx-4,cy,Color{250,250,255,245}); DrawLine(cx+4,cy,cx+12,cy,Color{250,250,255,245});
+            DrawLine(cx,cy-12,cx,cy-4,Color{250,250,255,245}); DrawLine(cx,cy+4,cx,cy+12,Color{250,250,255,245});
             if(miningTimer>0.0f) {
                 float progress=Clamp(miningTimer/miningDuration,0.0f,1.0f);
                 DrawRectangle(cx-38,cy+22,76,8,Fade(BLACK,.78f));
