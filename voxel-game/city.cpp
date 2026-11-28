@@ -15,7 +15,7 @@ static std::vector<Car> cars;
 static int selected=ROAD;
 static bool paused=false;
 static int money=320000, population=0, happiness=62, month=1, year=1;
-static int jobs=0, electricity=0, waterSupply=0, connectedZones=0;
+static int jobs=0, electricity=0, waterSupply=0, connectedZones=0, servedHomes=0, servedShops=0, servedFactories=0;
 static float simTimer=0, carTimer=0, demandR=.7f, demandC=.45f, demandI=.5f;
 static Camera3D camera={};
 static Vector3 target={N/2.0f,0,N/2.0f};
@@ -106,7 +106,7 @@ int main(){
    for(int x=0;x<N;x++)for(int z=0;z<N;z++){BoundingBox b={{(float)x,-.1f,(float)z},{x+1.0f,.15f,z+1.0f}};RayCollision c=GetRayCollisionBox(ray,b);if(c.hit&&c.distance<best){best=c.distance;bx=x;bz=z;}}
    if(inBounds(bx,bz)){Tile&t=city[bx][bz];int costs[]={180,420,620,560,850,6500,4200,0};int cost=costs[selected];
     if(selected==BULLDOZER){if(t.tool>=0){money+=90;t=Tile{};}}
-    else if(money>=cost&&(t.tool<0||t.tool==ROAD)){t.tool=selected;t.level=0;t.growth=0;money-=cost;}
+    else if(money>=cost&&t.tool<0){t.tool=selected;t.level=0;t.growth=0;money-=cost;}
    }
   }
   if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)&&GetMouseY()>104&&GetMouseY()<GetScreenHeight()-88){
@@ -137,8 +137,8 @@ int main(){
   DrawRectangle(0,GetScreenHeight()-82,GetScreenWidth(),82,{15,22,36,248});
   const char* keys[]={"1 ROAD","2 RES ZONE","3 COM ZONE","4 IND ZONE","5 PARK","6 POWER","7 WATER","E BULLDOZE"};
   for(int i=0;i<8;i++){int x=12+i*GetScreenWidth()/8;int w=GetScreenWidth()/8-8;DrawRectangle(x,GetScreenHeight()-67,w,48,selected==i?Color{56,103,145,255}:Color{34,48,68,255});DrawRectangle(x+7,GetScreenHeight()-54,17,17,toolColors[i]);DrawText(keys[i],x+30,GetScreenHeight()-53,14,RAYWHITE);}
-  DrawText("LMB build/zone | RMB demolish | WASD move | Wheel zoom | SPACE pause | F5 save | F9 load",18,108,15,Fade(RAYWHITE,.9f));
-  if(electricity==0||waterSupply==0)DrawText("TIP: Build a power plant AND a water tower near your zones.",18,130,15,ORANGE);
+  DrawText("BUILD: click empty land | ZONES: place beside a road; they grow when serviced | RMB demolish",18,108,15,Fade(RAYWHITE,.9f));\n  DrawText(TextFormat("ACTIVE ZONES  RES %d  COM %d  IND %d   |   POWER LEFT %d  WATER LEFT %d",servedHomes,servedShops,servedFactories,electricity,waterSupply),18,130,14,Fade(RAYWHITE,.9f));\n  DrawText("WASD move  |  Wheel zoom  |  SPACE pause  |  F5 save  |  F9 load",18,151,14,Fade(RAYWHITE,.75f));
+  if(electricity==0||waterSupply==0)DrawText("TIP: Place a power plant and water tower near road-connected zones; capacity is limited.",18,174,14,ORANGE);
   EndDrawing();
  }
  saveCity();CloseWindow();return 0;
