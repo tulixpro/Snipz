@@ -23,6 +23,25 @@ static void card(HDC dc,RECT r,COLORREF edge,const char* tag,const char* name,co
  HBRUSH b=CreateSolidBrush(PANEL);HPEN p=CreatePen(PS_SOLID,2,edge);HGDIOBJ ob=SelectObject(dc,b),op=SelectObject(dc,p);
  RoundRect(dc,r.left,r.top,r.right,r.bottom,18,18);SelectObject(dc,ob);SelectObject(dc,op);DeleteObject(b);DeleteObject(p);
  text(dc,tag,r.left+34,r.top+28,smallFont,edge);text(dc,name,r.left+34,r.top+76,titleFont,TEXT);text(dc,desc,r.left+34,r.top+150,bodyFont,MUTED);
+ // Original mini-scene artwork gives each game card a clear visual identity.
+ RECT art={r.right-390,r.top+18,r.right-28,r.bottom-78};
+ HBRUSH ab=CreateSolidBrush(PANEL2);HGDIOBJ oldBrush=SelectObject(dc,ab);HPEN ap=CreatePen(PS_SOLID,1,RGB(56,76,101));HGDIOBJ oldPen=SelectObject(dc,ap);
+ RoundRect(dc,art.left,art.top,art.right,art.bottom,14,14);
+ SelectObject(dc,oldBrush);SelectObject(dc,oldPen);DeleteObject(ab);DeleteObject(ap);
+ if(tag[1]=='1'){
+  HBRUSH hill=CreateSolidBrush(RGB(49,104,75));RECT h1={art.left+10,art.bottom-65,art.right-8,art.bottom-8};FillRect(dc,&h1,hill);DeleteObject(hill);
+  COLORREF blocks[5]={RGB(104,164,92),RGB(123,94,69),RGB(112,122,139),RGB(81,137,83),RGB(147,112,78)};
+  for(int k=0;k<5;k++){int x=art.left+25+k*54,y=art.top+25+(k%2)*18;HBRUSH b=CreateSolidBrush(blocks[k]);RECT q={x,y,x+42,y+42};FillRect(dc,&q,b);DeleteObject(b);HPEN edgePen=CreatePen(PS_SOLID,1,RGB(27,43,48));HGDIOBJ op=SelectObject(dc,edgePen);Rectangle(dc,x,y,x+42,y+42);SelectObject(dc,op);DeleteObject(edgePen);}
+  HBRUSH trunk=CreateSolidBrush(RGB(94,68,45));RECT tr={art.right-70,art.bottom-65,art.right-58,art.bottom-22};FillRect(dc,&tr,trunk);DeleteObject(trunk);
+  HBRUSH leaves=CreateSolidBrush(RGB(65,139,74));RECT crown={art.right-91,art.bottom-95,art.right-38,art.bottom-50};FillRect(dc,&crown,leaves);DeleteObject(leaves);
+ } else {
+  HBRUSH skyBrush=CreateSolidBrush(RGB(83,139,177));RECT sr={art.left+1,art.top+1,art.right-1,art.bottom-35};FillRect(dc,&sr,skyBrush);DeleteObject(skyBrush);
+  COLORREF buildings[5]={RGB(89,112,139),RGB(135,147,157),RGB(75,96,123),RGB(171,133,98),RGB(95,130,143)};
+  for(int k=0;k<5;k++){int x=art.left+18+k*62,h=45+(k*19)%58;HBRUSH b=CreateSolidBrush(buildings[k]);RECT q={x,art.bottom-36-h,x+48,art.bottom-36};FillRect(dc,&q,b);DeleteObject(b);
+   HBRUSH win=CreateSolidBrush(RGB(226,205,139));for(int wy=art.bottom-29-h;wy<art.bottom-48;wy+=17)for(int wx=x+8;wx<x+40;wx+=17){RECT wq={wx,wy,wx+7,wy+9};FillRect(dc,&wq,win);}DeleteObject(win);}
+  HBRUSH road=CreateSolidBrush(RGB(46,52,61));RECT rr={art.left+1,art.bottom-36,art.right-1,art.bottom-1};FillRect(dc,&rr,road);DeleteObject(road);
+  HPEN lane=CreatePen(PS_DASH,2,RGB(240,213,132));HGDIOBJ op=SelectObject(dc,lane);MoveToEx(dc,art.left+8,art.bottom-18,nullptr);LineTo(dc,art.right-8,art.bottom-18);SelectObject(dc,op);DeleteObject(lane);
+ }
  RECT br={r.right-230,r.bottom-88,r.right-28,r.bottom-28};HBRUSH bb=CreateSolidBrush(edge);ob=SelectObject(dc,bb);RoundRect(dc,br.left,br.top,br.right,br.bottom,12,12);SelectObject(dc,ob);DeleteObject(bb);
  text(dc,button,br.left+42,br.top+17,bodyFont,BG);
 }
