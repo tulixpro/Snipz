@@ -36,7 +36,8 @@ static LRESULT CALLBACK Proc(HWND w,UINT m,WPARAM a,LPARAM b){
   return 0;
  case WM_ERASEBKGND:return 1;
  case WM_PAINT:{PAINTSTRUCT ps;HDC dc=BeginPaint(w,&ps);RECT rc;GetClientRect(w,&rc);HBRUSH bg=CreateSolidBrush(BG);FillRect(dc,&rc,bg);DeleteObject(bg);
-  blockCard={42,210,rc.right-42,rc.top+430};cityCard={42,rc.top+465,rc.right-42,rc.top+685};\n  text(dc,"SNIPZ",48,32,titleFont,TEXT);text(dc,"GAME HUB   /   DEINE SPIELE",52,91,smallFont,ACCENT);text(dc,"Wahle ein Spiel und starte es.",48,145,subFont,MUTED);
+  blockCard={42,210,rc.right-42,rc.top+430};cityCard={42,rc.top+465,rc.right-42,rc.top+685};
+  text(dc,"SNIPZ",48,32,titleFont,TEXT);text(dc,"GAME HUB   /   DEINE SPIELE",52,91,smallFont,ACCENT);text(dc,"Wahle ein Spiel und starte es.",48,145,subFont,MUTED);
   card(dc,blockCard,ACCENT,"01   /   VOXEL SANDBOX","BLOCKLANDS","Erkunden, bauen und in einer Voxel-Welt uberleben.","SPIELEN");
   card(dc,cityCard,GREEN,"02   /   CITY BUILDER","SNIPZ CITY","Strassen planen, Gebiete ausweisen und eine Stadt entwickeln.","SPIELEN");
   text(dc,status.c_str(),48,rc.bottom-92,subFont,TEXT);text(dc,"Beide Spiele liegen als EXE-Dateien neben diesem Launcher.",48,rc.bottom-55,subFont,MUTED);
