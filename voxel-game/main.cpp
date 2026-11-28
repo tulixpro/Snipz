@@ -444,7 +444,7 @@ int main() {
             int x=(int)std::lround(b.p.x), z=(int)std::lround(b.p.z), y=(int)std::lround(b.p.y);
             if(x<2 || x>=worldSize-2 || z<2 || z>=worldSize-2) continue;
             int surface=groundHeights[x*worldSize+z];
-            if(surface<=0 || y!=surface || made>=std::max(2,worldSize/100)) continue;
+            if(surface<=0 || y!=surface-1 || made>=std::max(2,worldSize/100)) continue;
             int vx=Clamp(x+3,1,worldSize-2), vz=Clamp(z+2,1,worldSize-2);
             int vh=groundHeights[vx*worldSize+vz];
             if(vh<=0) continue;
