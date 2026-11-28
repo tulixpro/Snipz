@@ -731,7 +731,7 @@ int main() {
             if(IsKeyPressed(KEY_E) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
         }
         else if (screen==PLAYING && inventoryOpen) {
-            if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
+            if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP) || IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)))) { inventoryOpen=false; DisableCursor(); }
             if((activeGamepad>=0)) {
                 if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_LEFT)) inventoryCursor=std::max(0,inventoryCursor-1);
                 if(IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) inventoryCursor=std::min(paletteCount-1,inventoryCursor+1);
@@ -760,7 +760,7 @@ int main() {
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
             if (IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_MIDDLE_RIGHT))) { screen=PAUSED; EnableCursor(); }
             if (IsKeyPressed(KEY_F2)) { screen=WORLD_MENU; EnableCursor(); }
-            if(!creative && (IsKeyPressed(KEY_Q) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)))) {
+            if(!creative && (IsKeyPressed(KEY_Q) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_LEFT)))) {
                 if(foodCount>0 && hunger<20) { foodCount--; hunger=std::min(20,hunger+6); message="You ate an apple. Hunger restored."; messageTime=2.5f; }
                 else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
             }
@@ -795,12 +795,16 @@ int main() {
                     yaw+=lookX*dt*(controllerSensitivity/10.0f);
                     pitch=Clamp(pitch+lookY*dt*(controllerSensitivity/12.0f),-1.45f,1.45f);
                 }
-                bool sprinting=IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+                // Xbox Minecraft-style controls: hold B to sneak, X to eat, A to jump.
+                bool sneaking=(activeGamepad>=0 && IsGamepadButtonDown(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_RIGHT));
+                bool sprinting=(IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && !sneaking;
                 if(sprinting && Vector3Length(move)>0 && (creative || stamina>0.5f)) {
                     move=Vector3Scale(Vector3Normalize(move),(creative?14.0f:9.0f)*dt);
                     if(!creative) stamina=std::max(0.0f,stamina-24.0f*dt);
                 } else {
-                    if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
+                    float walkSpeed=creative?9.0f:5.0f;
+                    if(sneaking && !creative) walkSpeed*=0.42f;
+                    if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),walkSpeed*dt);
                     if(!sprinting) stamina=std::min(100.0f,stamina+16.0f*dt);
                 }
                 // Axis-separated voxel collision: trees, leaves, houses and placed blocks are solid.
@@ -1126,7 +1130,7 @@ int main() {
                 DrawRectangle(x+7,hotY+6,30,25,palette[i]);
                 DrawText(creative?"INF":TextFormat("%d",blockCounts[i]),x+7,hotY+33,9,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT/DOWN | SPACE JUMP/UP | P PICKAXE | G/M MODE | V FLY | LMB MINE | RMB PLACE",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"XBOX: LS MOVE | RS LOOK | A JUMP | HOLD B SNEAK | X EAT | RT MINE | LT PLACE | LB/RB SLOT | Y INVENTORY":"WASD MOVE | SHIFT SPRINT/DOWN | SPACE JUMP/UP | P PICKAXE | G/M MODE | V FLY | LMB MINE | RMB PLACE",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
