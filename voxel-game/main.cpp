@@ -203,10 +203,14 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
             }
             h = std::max(1, h);
             for (int y = 0; y < h; ++y) {
-                // Carve broad, winding underground cave passages from deterministic 3D-style noise.
+                // Layered deterministic 3D-style fields create connected tunnels and larger chambers.
                 float caveA=smoothNoise2(x*0.082f+y*0.115f,z*0.082f-y*0.091f,seed+y*41);
                 float caveB=smoothNoise2(x*0.047f-y*0.073f,z*0.047f+y*0.061f,seed+700+y*23);
-                if(y>3 && y<h-3 && caveA>0.765f && caveB>0.49f) continue;
+                float chamber=smoothNoise2(x*0.031f+y*0.043f,z*0.031f-y*0.057f,seed+1900+y*13);
+                float narrow=smoothNoise2(x*0.14f+y*0.19f,z*0.14f-y*0.16f,seed+2900+y*29);
+                bool tunnel=(caveA>0.735f && caveB>0.455f);
+                bool cavern=(chamber>0.735f && caveB>0.43f && narrow>0.39f);
+                if(y>3 && y<h-2 && (tunnel || cavern)) continue;
                 Color c = palette[1];
                 if (y == h-1) c = (type == 3 && h <= 2) ? palette[3] : palette[0];
                 if (type == 2 && y == h-1 && h > 13) c = palette[5];
