@@ -41,7 +41,7 @@ static LRESULT CALLBACK Proc(HWND w,UINT m,WPARAM a,LPARAM b){
   card(dc,cityCard,GREEN,"02   /   CITY BUILDER","SNIPZ CITY","Strassen planen, Gebiete ausweisen und eine Stadt entwickeln.","SPIELEN");
   text(dc,status.c_str(),36,530,subFont,TEXT);text(dc,"Beide Spiele liegen als EXE-Dateien neben diesem Launcher.",36,565,subFont,MUTED);
   EndPaint(w,&ps);return 0;}
- case WM_LBUTTONUP:{POINT p={GET_X_LPARAM(b),GET_Y_LPARAM(b)};if(hit(p,blockCard))launchGame(w,"Blocklands.exe","Blocklands");else if(hit(p,cityCard))launchGame(w,"SnipzCity.exe","Snipz City");return 0;}
+ case WM_LBUTTONUP:{POINT p={(short)LOWORD(b),(short)HIWORD(b)};if(hit(p,blockCard))launchGame(w,"Blocklands.exe","Blocklands");else if(hit(p,cityCard))launchGame(w,"SnipzCity.exe","Snipz City");return 0;}
  case WM_DESTROY:DeleteObject(titleFont);DeleteObject(subFont);DeleteObject(bodyFont);DeleteObject(smallFont);PostQuitMessage(0);return 0;
  }return DefWindowProcA(w,m,a,b);
 }
