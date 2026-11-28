@@ -257,8 +257,7 @@ static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int&
     const char expected[8]={'B','L','K','W','O','R','L','D'};
     if(!in || std::memcmp(magic,expected,8)!=0) return false;
     int version=0, newSize=0, newType=0, newSeed=0, mode=1, count=0;
-    in.read((char*)&version,sizeof(version));
-    in.read((char*)&newSize,sizeof(newSize));
+    in.read((char*)&version,sizeof(version));    in.read((char*)&newSize,sizeof(newSize));
     in.read((char*)&newType,sizeof(newType));
     in.read((char*)&newSeed,sizeof(newSeed));
     in.read((char*)&mode,sizeof(mode));    in.read((char*)&count,sizeof(count));
@@ -459,7 +458,8 @@ int main() {
                 else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
             }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
-            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | Hold LMB mine | RMB build | C craft table"; messageTime=5; }\n            if(IsKeyPressed(KEY_C) && !creative) { if(blockCounts[9]>=4) { blockCounts[9]-=4; blockCounts[11]++; message="Crafted 1 crafting table from 4 wood."; } else { message="Need 4 wood to craft a crafting table."; } messageTime=3.0f; }
+            if (IsKeyPressed(KEY_F1)) { message="WASD move | Mouse look | Space jump | Hold LMB mine | RMB build | C craft table"; messageTime=5; }
+            if(IsKeyPressed(KEY_C) && !creative) { if(blockCounts[9]>=4) { blockCounts[9]-=4; blockCounts[11]++; message="Crafted 1 crafting table from 4 wood."; } else { message="Need 4 wood to craft a crafting table."; } messageTime=3.0f; }
             if (!commandOpen) {
                 Vector2 mouse=GetMouseDelta();
                 yaw += mouse.x*(mouseSensitivity/10000.0f);
@@ -517,8 +517,7 @@ int main() {
                 if(!creative) {
                     hungerTimer+=dt;
                     if(hungerTimer>=35.0f) { hungerTimer=0.0f; hunger=std::max(0,hunger-1); }
-                    if(hunger==0) {
-                        starvationTimer+=dt;
+                    if(hunger==0) {                        starvationTimer+=dt;
                         if(starvationTimer>=3.0f) { starvationTimer=0.0f; health=std::max(0,health-1); }
                     } else starvationTimer=0.0f;
                     if(hunger>=18 && health<20) {
