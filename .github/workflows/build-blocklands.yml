@@ -53,3 +53,5 @@ jobs:
 # Rebuild after larger terrain and wandering animal update.
 
 # Rebuild for expanded cave generation
+
+# Rebuild for cave zombies, combat and heart HUD
