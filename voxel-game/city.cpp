@@ -139,7 +139,9 @@ int main(){
   DrawRectangle(0,GetScreenHeight()-82,GetScreenWidth(),82,{15,22,36,248});
   const char* keys[]={"1 ROAD","2 RES ZONE","3 COM ZONE","4 IND ZONE","5 PARK","6 POWER","7 WATER","E BULLDOZE"};
   for(int i=0;i<8;i++){int x=12+i*GetScreenWidth()/8;int w=GetScreenWidth()/8-8;DrawRectangle(x,GetScreenHeight()-67,w,48,selected==i?Color{56,103,145,255}:Color{34,48,68,255});DrawRectangle(x+7,GetScreenHeight()-54,17,17,toolColors[i]);DrawText(keys[i],x+30,GetScreenHeight()-53,14,RAYWHITE);}
-  DrawText("BUILD: click empty land | ZONES: place beside a road; they grow when serviced | RMB demolish",18,108,15,Fade(RAYWHITE,.9f));\n  DrawText(TextFormat("ACTIVE ZONES  RES %d  COM %d  IND %d   |   POWER LEFT %d  WATER LEFT %d",servedHomes,servedShops,servedFactories,electricity,waterSupply),18,130,14,Fade(RAYWHITE,.9f));\n  DrawText("WASD move  |  Wheel zoom  |  SPACE pause  |  F5 save  |  F9 load",18,151,14,Fade(RAYWHITE,.75f));
+  DrawText("BUILD: click empty land | ZONES: place beside a road; they grow when serviced | RMB demolish",18,108,15,Fade(RAYWHITE,.9f));
+  DrawText(TextFormat("ACTIVE ZONES  RES %d  COM %d  IND %d   |   POWER LEFT %d  WATER LEFT %d",servedHomes,servedShops,servedFactories,electricity,waterSupply),18,130,14,Fade(RAYWHITE,.9f));
+  DrawText("WASD move  |  Wheel zoom  |  SPACE pause  |  F5 save  |  F9 load",18,151,14,Fade(RAYWHITE,.75f));
   if(electricity==0||waterSupply==0)DrawText("TIP: Place a power plant and water tower near road-connected zones; capacity is limited.",18,174,14,ORANGE);
   EndDrawing();
  }
