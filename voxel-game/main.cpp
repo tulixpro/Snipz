@@ -399,7 +399,7 @@ int main() {
     int menuFPS = fpsLimit;
     int activeGamepad=-1;
     bool previousPadMine=false, previousPadPlace=false;
-    float miningTimer=0.0f, miningDuration=0.65f;
+    float miningTimer=0.0f, miningDuration=0.65f, meleeCooldown=0.0f;
     int miningTarget=-1;
 
     Camera3D camera={};
@@ -590,21 +590,10 @@ int main() {
             }
         }
         if (messageTime>0) messageTime-=dt;
+        meleeCooldown=std::max(0.0f,meleeCooldown-dt);
 
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
             if(IsKeyPressed(KEY_E) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
-            if(!creative && (IsKeyPressed(KEY_F) || (activeGamepad>=0 && IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_LEFT)))) {
-                int target=-1; float best=3.6f;
-                for(int i=0;i<(int)caveMobs.size();i++) {
-                    float d=Vector3Distance(camera.position,caveMobs[i].p);
-                    if(d<best) { best=d; target=i; }
-                }
-                if(target>=0) {
-                    caveMobs[target].hp--;
-                    message=caveMobs[target].hp<=0?"Zombie defeated!":"Zombie hit!";
-                    messageTime=1.4f;
-                } else { message="No zombie nearby."; messageTime=1.2f; }
-            }
         }
         else if (screen==PLAYING && inventoryOpen) {
             if(IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ESCAPE) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=false; DisableCursor(); }
@@ -740,8 +729,27 @@ int main() {
                 previousPadMine=padMine; previousPadPlace=padPlace;
             if(minePressed || placePressed) {
                     Ray ray=GetMouseRay({GetScreenWidth()/2.0f,GetScreenHeight()/2.0f},camera);
+                    int mobHit=-1; float mobNearest=8.0f;
+                    if(minePressed && !creative) {
+                        for(int i=0;i<(int)caveMobs.size();++i) {
+                            Vector3 p=caveMobs[i].p;
+                            BoundingBox mobBox={{p.x-0.38f,p.y-0.55f,p.z-0.38f},{p.x+0.38f,p.y+0.85f,p.z+0.38f}};
+                            RayCollision mc=GetRayCollisionBox(ray,mobBox);
+                            if(mc.hit && mc.distance<=8.0f && mc.distance<mobNearest) { mobNearest=mc.distance; mobHit=i; }
+                        }
+                    }
+                    if(mobHit>=0) {
+                        miningTarget=-1; miningTimer=0.0f;
+                        if(meleeCooldown<=0.0f) {
+                            caveMobs[mobHit].hp--;
+                            meleeCooldown=0.48f;
+                            message=caveMobs[mobHit].hp<=0?"Zombie defeated!":"Zombie hit!";
+                            messageTime=1.1f;
+                            if(caveMobs[mobHit].hp<=0) caveMobs.erase(caveMobs.begin()+mobHit);
+                        }
+                    }
                     int hit=-1; float nearest=1000.0f; Vector3 normal={0,0,0};
-                    for(int i=0;i<(int)blocks.size();++i) {
+                    if(mobHit<0) for(int i=0;i<(int)blocks.size();++i) {
                         BoundingBox box={{blocks[i].p.x-.5f,blocks[i].p.y-.5f,blocks[i].p.z-.5f},{blocks[i].p.x+.5f,blocks[i].p.y+.5f,blocks[i].p.z+.5f}};
                         RayCollision c=GetRayCollisionBox(ray,box);
                         if(c.hit && c.distance<=8.0f && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
@@ -867,7 +875,7 @@ int main() {
             DrawRectangleRounded({(float)GetScreenWidth()-210,14,196,64},.14f,8,Fade(Color{8,14,26,255},.8f));
             DrawText(TextFormat("%s  %02d:%02d",night?"NIGHT":"DAY",(int)(dayTime*24.0f),(int)(fmodf(dayTime*1440.0f,60.0f))),GetScreenWidth()-190,24,18,night?SKYBLUE:GOLD);
             DrawText("ESC  PAUSE",GetScreenWidth()-190,49,14,WHITE);
-            if(!creative) DrawText(TextFormat("CAVE ZOMBIES: %d  |  F ATTACK", (int)caveMobs.size()),GetScreenWidth()-310,88,13,Color{145,225,155,255});
+            if(!creative) DrawText(TextFormat("CAVE ZOMBIES: %d  |  AIM + LEFT CLICK", (int)caveMobs.size()),GetScreenWidth()-310,88,13,Color{145,225,155,255});
             int cx=GetScreenWidth()/2, cy=GetScreenHeight()/2;
             DrawLine(cx-12,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+12,cy,WHITE);
             DrawLine(cx,cy-12,cx,cy-4,WHITE); DrawLine(cx,cy+4,cx,cy+12,WHITE);
