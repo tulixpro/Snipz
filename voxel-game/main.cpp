@@ -498,6 +498,7 @@ int main() {
             if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
                 RebuildHeightMap(blocks,worldSize,groundHeights);
                 if(worldModelReady) UnloadModel(worldModel);
+                rebuildBlockLookup();
                 worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; resetCamera();
                 message="Saved world loaded.";
             } else message="No valid save found.";
@@ -789,6 +790,7 @@ int main() {
                             miningTarget=-1; miningTimer=0.0f;
                             RebuildHeightMap(blocks,worldSize,groundHeights);
                             if(worldModelReady) UnloadModel(worldModel);
+                rebuildBlockLookup();
                             worldModel=BuildWorldModel(blocks,worldSize);
                             worldModelReady=true;
                         }
@@ -798,6 +800,7 @@ int main() {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
+                rebuildBlockLookup();
                         if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); rebuildBlockLookup(); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     }
                 } else { miningTarget=-1; miningTimer=0.0f; }
@@ -945,6 +948,7 @@ int main() {
                     if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
                         RebuildHeightMap(blocks,worldSize,groundHeights);
                         if(worldModelReady) UnloadModel(worldModel);
+                rebuildBlockLookup();
                         worldModel=BuildWorldModel(blocks,worldSize);
                         worldModelReady=true;
                         resetCamera();
