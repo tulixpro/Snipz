@@ -1173,10 +1173,13 @@ int main() {
                 DrawText("Your worlds are saved on this PC.",(int)panelX+30,(int)panelY+174,14,Color{166,188,207,255});
                 if(button({cx-175,panelY+218,350,54},"CREATE NEW WORLD",true)) screen=WORLD_MENU;
                 if(button({cx-175,panelY+284,350,48},"CONTINUE WORLD")) {
-                    if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
+                    if(LoadWorldFile(blocks,worldSize,seed,creative)) {
                         RebuildHeightMap(blocks,worldSize,groundHeights);
+                        populateVillagers();
+                        populateAnimals();
+                        caveMobs.clear(); caveMobsSpawned=false;
                         clearChunks();
-                rebuildBlockLookup();
+                        rebuildBlockLookup();
                         
                         
                         resetCamera();
