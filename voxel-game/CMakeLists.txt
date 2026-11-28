@@ -1,24 +1,23 @@
 cmake_minimum_required(VERSION 3.20)
 cmake_policy(SET CMP0091 NEW)
-project(Blocklands LANGUAGES C CXX)
+project(SnipzGames LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Link the MSVC runtime statically so users do not need to install
-# the Microsoft Visual C++ Redistributable just to start the game.
 if(MSVC)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
-
-# Use raylib's OpenGL 2.1 backend for compatibility with older GPUs/drivers.
 set(OPENGL_VERSION "2.1" CACHE STRING "OpenGL version" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(raylib GIT_REPOSITORY https://github.com/raysan5/raylib.git GIT_TAG 5.5)
 FetchContent_MakeAvailable(raylib)
-
 add_executable(Blocklands main.cpp)
 target_link_libraries(Blocklands PRIVATE raylib)
+add_executable(SnipzCity city.cpp)
+target_link_libraries(SnipzCity PRIVATE raylib)
 if(WIN32)
   target_link_libraries(Blocklands PRIVATE winmm)
+  target_link_libraries(SnipzCity PRIVATE winmm)
+  add_executable(SnipzLauncher WIN32 launcher.cpp)
+  target_link_libraries(SnipzLauncher PRIVATE shell32)
 endif()
