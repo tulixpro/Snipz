@@ -980,7 +980,6 @@ int main() {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         int px=(int)std::lround(p.x), py=(int)std::lround(p.y), pz=(int)std::lround(p.z);
                         bool occupied=blockLookup.find(blockKey(px,py,pz))!=blockLookup.end();
-                rebuildBlockLookup();
                         if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); rebuildBlockLookup(); RebuildHeightMap(blocks,worldSize,groundHeights); clearChunks();   }
                     }
                 } else { miningTarget=-1; miningTimer=0.0f; }
