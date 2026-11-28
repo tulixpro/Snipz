@@ -11,6 +11,7 @@
 #include <cmath>
 
 struct Block { Vector3 p; Color c; };
+struct Animal { Vector3 p; Vector3 dir; float turnTimer; int type; };
 
 
 static float noise2(int x, int z, int seed) {
@@ -336,7 +337,7 @@ static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int&
     in.read((char*)&version,sizeof(version));    in.read((char*)&newSize,sizeof(newSize));    in.read((char*)&newType,sizeof(newType));
     in.read((char*)&newSeed,sizeof(newSeed));
     in.read((char*)&mode,sizeof(mode));    in.read((char*)&count,sizeof(count));
-    if(!in || version!=1 || newSize<32 || newSize>320 || newType<0 || newType>3 || count<0 || count>2000000) return false;
+    if(!in || version!=1 || newSize<32 || newSize>512 || newType<0 || newType>3 || count<0 || count>2000000) return false;
     std::vector<Block> loaded;
     loaded.reserve(count);
     for(int i=0;i<count;i++) {
@@ -383,7 +384,7 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=320, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=384, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     int blockCounts[12]={0};
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     float dayTime=0.25f;
@@ -417,6 +418,22 @@ int main() {
         camera.target=Vector3Add(camera.position,look);
                 camera.fovy=(float)fov;
         velocity={0,0,0}; onGround=false;
+    };
+    std::vector<Animal> animals;
+    auto populateAnimals = [&]() {
+        animals.clear();
+        if(groundHeights.empty()) return;
+        int count=std::max(12,worldSize/10);
+        for(int i=0;i<count;i++) {
+            int x=8+(int)(noise2(i+seed,31,seed+7)*(worldSize-16));
+            int z=8+(int)(noise2(i+seed,79,seed+19)*(worldSize-16));
+            int h=groundHeights[x*worldSize+z];
+            if(h<19 || h>48) continue;
+            int type=(int)(noise2(i+seed,113,seed+29)*4.0f);
+            animals.push_back({{(float)x,(float)h+0.55f,(float)z},
+                               {noise2(i,7,seed)-0.5f,0,noise2(i,13,seed)-0.5f},
+                               noise2(i,23,seed)*4.0f,type});
+        }
     };
     auto startWorld = [&]() {
         GenerateWorld(blocks,worldSize,worldType,seed);
@@ -502,7 +519,22 @@ int main() {
         activeGamepad=-1;
         for(int gp=0;gp<4;gp++) if(IsGamepadAvailable(gp)) { activeGamepad=gp; break; }
         float dt=std::min(GetFrameTime(),0.05f);
-        if(screen==PLAYING) { dayTime+=dt/720.0f; if(dayTime>=1.0f) dayTime-=1.0f; night=(dayTime<0.22f || dayTime>0.78f); }
+        if(screen==PLAYING && !blocks.empty() && animals.empty()) populateAnimals();
+        if(screen==PLAYING) {
+            for(auto& animal:animals) {
+                animal.turnTimer-=dt;
+                if(animal.turnTimer<=0.0f) {
+                    float a=noise2((int)(animal.p.x*3+animal.p.z), (int)(animal.p.z*5), seed+(int)(GetTime()*2))*2.0f*PI;
+                    animal.dir={cosf(a),0,sinf(a)};
+                    animal.turnTimer=2.0f+noise2((int)animal.p.x,(int)animal.p.z,seed+71)*4.0f;
+                }
+                animal.p.x+=animal.dir.x*dt*0.8f;
+                animal.p.z+=animal.dir.z*dt*0.8f;
+                int ax=Clamp((int)animal.p.x,1,worldSize-2), az=Clamp((int)animal.p.z,1,worldSize-2);
+                animal.p.y=(float)groundHeights[ax*worldSize+az]+0.55f;
+                if(animal.p.y<19.0f || animal.p.y>50.0f) animal.dir=Vector3Scale(animal.dir,-1.0f);
+            }
+            dayTime+=dt/720.0f; if(dayTime>=1.0f) dayTime-=1.0f; night=(dayTime<0.22f || dayTime>0.78f); }
         if (messageTime>0) messageTime-=dt;
 
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
@@ -712,6 +744,25 @@ int main() {
             }
             
             if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
+            // Friendly wandering voxel animals: sheep, cows, pigs and chickens.
+            for(const auto& animal:animals) {
+                Vector3 p=animal.p;
+                Color body=animal.type==0?Color{225,225,215,255}:(animal.type==1?Color{112,78,52,255}:(animal.type==2?Color{224,145,155,255}:Color{245,240,220,255}));
+                float scale=animal.type==3?0.48f:1.0f;
+                DrawCubeV({p.x,p.y+0.32f*scale,p.z},{0.82f*scale,0.58f*scale,0.48f*scale},body);
+                DrawCubeV({p.x+0.43f*scale,p.y+0.48f*scale,p.z},{0.30f*scale,0.34f*scale,0.32f*scale},body);
+                DrawCubeV({p.x+0.56f*scale,p.y+0.49f*scale,p.z+0.02f*scale},{0.10f*scale,0.12f*scale,0.12f*scale},Color{35,35,35,255});
+                for(int leg=0;leg<4;leg++) {
+                    float lx=p.x+((leg<2)?-0.25f:0.25f)*scale;
+                    float lz=p.z+((leg%2)?0.15f:-0.15f)*scale;
+                    DrawCubeV({lx,p.y+0.10f*scale,lz},{0.13f*scale,0.24f*scale,0.13f*scale},Color{65,55,48,255});
+                }
+                if(animal.type==1) {
+                    DrawCubeV({p.x+0.36f,p.y+0.72f,p.z-0.12f},{0.12f,0.18f,0.12f},Color{235,235,225,255});
+                    DrawCubeV({p.x+0.36f,p.y+0.72f,p.z+0.12f},{0.12f,0.18f,0.12f},Color{235,235,225,255});
+                }
+                if(animal.type==3) DrawCubeV({p.x+0.61f*scale,p.y+0.40f*scale,p.z},{0.12f*scale,0.10f*scale,0.12f},Color{230,75,55,255});
+            }
             EndMode3D();
 
             DrawRectangleRounded({14,14,250,78},.12f,8,Fade(Color{8,14,26,255},.84f));
@@ -805,7 +856,7 @@ int main() {
                 if(button({cx+156,212,64,48},">")) worldType=(worldType+1)%4;
                 DrawText(TextFormat("WORLD SIZE:  %d x %d",worldSize,worldSize),(int)cx-130,285,20,WHITE);
                 if(button({cx-220,322,64,48},"-")) worldSize=std::max(32,worldSize-16);
-                if(button({cx+156,322,64,48},"+")) worldSize=std::min(320,worldSize+16);
+                if(button({cx+156,322,64,48},"+")) worldSize=std::min(512,worldSize+16);
                 DrawText(TextFormat("SEED: %d",seed),(int)cx-75,397,18,LIGHTGRAY);
                 if(button({cx+85,384,135,44},"RANDOM")) seed=GetRandomValue(1,999999);
                 if(button({cx-155,466,310,58},"GENERATE WORLD",true)) startWorld();
