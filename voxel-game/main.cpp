@@ -449,7 +449,6 @@ int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     bool onGround=false;
     struct ChunkRender { int x; int z; Model model; };
     std::vector<ChunkRender> renderChunks;
-    const int CHUNK_SIZE=16;
     const int RENDER_DISTANCE_CHUNKS=2;
     auto clearChunks = [&]() {
         for(auto& chunk:renderChunks) if(chunk.model.meshCount>0) UnloadModel(chunk.model);
@@ -474,7 +473,8 @@ int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
                     bool loaded=false;
                     for(const auto& chunk:renderChunks) if(chunk.x==cx && chunk.z==cz) { loaded=true; break; }
                     if(loaded) continue;
-                    Model model=BuildWorldModel(blocks,worldSize,blockSolid,cx,cz,CHUNK_SIZE);
+                    int chunksPerAxis=(worldSize+CHUNK_SIZE-1)/CHUNK_SIZE;
+                    Model model=BuildWorldModel(chunkBlockData[cx*chunksPerAxis+cz],worldSize,blockSolid,cx,cz,CHUNK_SIZE);
                     renderChunks.push_back({cx,cz,model});
                     return;
                 }
@@ -589,6 +589,9 @@ int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
         else if (s=="/load") {
             if(LoadWorldFile(blocks,worldSize,worldType,seed,creative)) {
                 RebuildHeightMap(blocks,worldSize,groundHeights);
+                populateVillagers();
+                populateAnimals();
+                caveMobs.clear(); caveMobsSpawned=false;
                 clearChunks();
                 rebuildBlockLookup();
                   resetCamera();
@@ -1070,6 +1073,7 @@ int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
             DrawText("BLOCKLANDS",28,22,25,RAYWHITE);
             DrawFPS(29,55);
             DrawText(TextFormat("%s  |  %s%s",worldNames[worldType],creative?"CREATIVE":"SURVIVAL",creativeFlying?" | FLY":""),286,24,18,RAYWHITE);
+            DrawText(TextFormat("CHUNKS: %d", (int)renderChunks.size()),286,47,13,Color{154,205,235,255});
             DrawText(pickaxeEquipped?"TOOL: PICKAXE (P)":"TOOL: HAND (P)",286,70,13,GOLD);
             if(!creative) {
                 DrawRectangleRounded({14,100,270,104},.12f,8,Fade(Color{8,14,26,255},.84f));
