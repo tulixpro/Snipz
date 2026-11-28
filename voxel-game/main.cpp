@@ -441,8 +441,10 @@ int main() {
         }
     };
     std::vector<CaveMob> caveMobs;
+    bool caveMobsSpawned=false;
     auto populateCaveMobs = [&]() {
         caveMobs.clear();
+        caveMobsSpawned=true;
         if(groundHeights.empty()) return;
         int targetCount=std::min(16,std::max(8,worldSize/48));
         for(int i=0;i<targetCount*18 && (int)caveMobs.size()<targetCount;i++) {
@@ -464,6 +466,7 @@ int main() {
         }
     };
     auto startWorld = [&]() {
+        caveMobs.clear(); caveMobsSpawned=false;
         GenerateWorld(blocks,worldSize,worldType,seed);
         RebuildHeightMap(blocks,worldSize,groundHeights);
         if(worldModelReady) UnloadModel(worldModel);
@@ -548,7 +551,7 @@ int main() {
         for(int gp=0;gp<4;gp++) if(IsGamepadAvailable(gp)) { activeGamepad=gp; break; }
         float dt=std::min(GetFrameTime(),0.05f);
         if(screen==PLAYING && !blocks.empty() && animals.empty()) populateAnimals();
-        if(screen==PLAYING && !blocks.empty() && caveMobs.empty() && !creative) populateCaveMobs();
+        if(screen==PLAYING && !blocks.empty() && !caveMobsSpawned && !creative) populateCaveMobs();
         if(screen==PLAYING) {
             for(auto& animal:animals) {
                 animal.turnTimer-=dt;
@@ -577,7 +580,7 @@ int main() {
                             if(it->attackTimer<=0.0f) {
                                 health=std::max(0,health-2);
                                 it->attackTimer=1.35f;
-                                message="A cave zombie hit you! -2 hearts points";
+                                message="A cave zombie hit you! -1 heart";
                                 messageTime=1.8f;
                             }
                         }
