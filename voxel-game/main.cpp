@@ -9,6 +9,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 
 struct Block { Vector3 p; Color c; };
 struct Animal { Vector3 p; Vector3 dir; float turnTimer; int type; };
@@ -389,8 +390,11 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=384, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=192, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     int blockCounts[12]={0};
+    std::unordered_map<long long,int> blockLookup;
+    auto blockKey=[&](int x,int y,int z)->long long { return ((long long)y*worldSize+(long long)z)*worldSize+(long long)x; };
+    auto rebuildBlockLookup=[&]() { blockLookup.clear(); blockLookup.reserve(blocks.size()*2); for(int i=0;i<(int)blocks.size();++i) blockLookup[blockKey((int)std::lround(blocks[i].p.x),(int)std::lround(blocks[i].p.y),(int)std::lround(blocks[i].p.z))]=i; };
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     float dayTime=0.25f;
     char command[128]={0};
@@ -470,6 +474,7 @@ int main() {
         GenerateWorld(blocks,worldSize,worldType,seed);
         RebuildHeightMap(blocks,worldSize,groundHeights);
         if(worldModelReady) UnloadModel(worldModel);
+        rebuildBlockLookup();
         worldModel=BuildWorldModel(blocks,worldSize);
         worldModelReady=true;
         resetCamera();
@@ -749,10 +754,24 @@ int main() {
                         }
                     }
                     int hit=-1; float nearest=1000.0f; Vector3 normal={0,0,0};
-                    if(mobHit<0) for(int i=0;i<(int)blocks.size();++i) {
-                        BoundingBox box={{blocks[i].p.x-.5f,blocks[i].p.y-.5f,blocks[i].p.z-.5f},{blocks[i].p.x+.5f,blocks[i].p.y+.5f,blocks[i].p.z+.5f}};
-                        RayCollision c=GetRayCollisionBox(ray,box);
-                        if(c.hit && c.distance<=8.0f && c.distance<nearest) { nearest=c.distance; hit=i; normal=c.normal; }
+                    // Fast voxel ray march: test only cells crossed by the crosshair ray,
+                    // instead of checking every block in the entire world.
+                    if(mobHit<0) {
+                        for(float t=0.0f;t<=8.0f;t+=0.06f) {
+                            Vector3 sample=Vector3Add(ray.position,Vector3Scale(ray.direction,t));
+                            int bx=(int)std::floor(sample.x+0.5f);
+                            int by=(int)std::floor(sample.y+0.5f);
+                            int bz=(int)std::floor(sample.z+0.5f);
+                            auto found=blockLookup.find(blockKey(bx,by,bz));
+                            if(found==blockLookup.end()) continue;
+                            int candidate=found->second;
+                            if(candidate<0 || candidate>=(int)blocks.size()) continue;
+                            BoundingBox box={{blocks[candidate].p.x-.5f,blocks[candidate].p.y-.5f,blocks[candidate].p.z-.5f},{blocks[candidate].p.x+.5f,blocks[candidate].p.y+.5f,blocks[candidate].p.z+.5f}};
+                            RayCollision collision=GetRayCollisionBox(ray,box);
+                            if(collision.hit && collision.distance<=8.0f && collision.distance<nearest) {
+                                nearest=collision.distance; hit=candidate; normal=collision.normal;
+                            }
+                        }
                     }
                     if(hit>=0 && minePressed) {
                         if(miningTarget!=hit) {
@@ -766,6 +785,7 @@ int main() {
                         if(miningTimer>=miningDuration) {
                             if(!creative) { for(int bt=0;bt<paletteCount;bt++) if(blocks[hit].c.r==palette[bt].r && blocks[hit].c.g==palette[bt].g && blocks[hit].c.b==palette[bt].b) { blockCounts[bt]++; break; } }
                             blocks.erase(blocks.begin()+hit);
+                            rebuildBlockLookup();
                             miningTarget=-1; miningTimer=0.0f;
                             RebuildHeightMap(blocks,worldSize,groundHeights);
                             if(worldModelReady) UnloadModel(worldModel);
@@ -778,7 +798,7 @@ int main() {
                         Vector3 p=Vector3Add(blocks[hit].p,normal);
                         bool occupied=false;
                         for(const auto& b:blocks) if(b.p.x==p.x&&b.p.y==p.y&&b.p.z==p.z) {occupied=true;break;}
-                        if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
+                        if(!occupied && p.y>=0 && p.y<127 && Vector3Distance(p,camera.position)>1.4f && (creative || blockCounts[selected]>0)) { if(!creative) blockCounts[selected]--; blocks.push_back({p,palette[selected]}); rebuildBlockLookup(); RebuildHeightMap(blocks,worldSize,groundHeights); if(worldModelReady) UnloadModel(worldModel); worldModel=BuildWorldModel(blocks,worldSize); worldModelReady=true; }
                     }
                 } else { miningTarget=-1; miningTimer=0.0f; }
             }
