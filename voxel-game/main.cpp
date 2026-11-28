@@ -58,90 +58,93 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 }
 
 static Texture2D CreateBlockAtlas() {
-    // Clean, original voxel pixel-art tiles: broad color patches, not noisy per-pixel grain.
+    // Original 16x16-style pixel-art materials, enlarged to 32x32 atlas tiles.
+    // The visual language is classic voxel sandbox: crisp pixels, readable materials,
+    // restrained palettes and hand-shaped mineral/wood/brick details.
     Image image=GenImageColor(256,96,WHITE);
     const Color bases[24]={
-        {95,166,65,255},{134,96,62,255},{126,130,136,255},{194,174,104,255},
-        {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255},
-        {112,76,45,255},{232,91,137,255},{145,93,54,255},
+        {105,170,65,255},{132,96,62,255},{126,130,136,255},{194,174,104,255},
+        {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},
+        {224,83,27,255},{112,76,45,255},{232,91,137,255},{145,93,54,255},
         {42,43,47,255},{190,132,91,255},{238,190,55,255},{70,205,220,255},
         {126,94,58,255},{116,77,43,255},{150,125,83,255},{94,111,66,255},
         {112,86,57,255},{126,95,60,255},{139,108,70,255},{96,73,49,255}
     };
+    auto mix=[](Color a,Color b,float t)->Color {
+        return Color{(unsigned char)(a.r+(b.r-a.r)*t),(unsigned char)(a.g+(b.g-a.g)*t),
+                     (unsigned char)(a.b+(b.b-a.b)*t),255};
+    };
     for(int type=0;type<24;type++) {
-        int ox=(type%8)*32, oy=(type/8)*32;
-        for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
-            int gx=x/2, gy=y/2;
-            float n=noise2(gx+type*37,gy+type*19,4242);
-            float detail=noise2(x+type*71,y+type*43,8181);
-            float shade=0.88f+n*0.19f+(detail-0.5f)*0.10f;
+        const int ox=(type%8)*32, oy=(type/8)*32;
+        for(int py=0;py<16;py++) for(int px=0;px<16;px++) {
+            const int x=px*2,y=py*2;
+            const float n=noise2(px+type*31,py+type*17,4242);
             Color p=bases[type];
-            if(type==0) {
-                // Grass: calm green surface with a few darker pixel clusters.
-                if(n<0.20f) shade=0.76f;
-                if(n>0.88f) shade=1.14f;
-                if(((x*13+y*7)%47)<2) shade=0.62f;
-            } else if(type==1) {
-                if(n<0.24f) shade=0.73f;
-                if(n>0.86f) shade=1.16f;
-                if(((x*5+y*11)%31)<2) shade=0.62f;
-            } else if(type==2) {
-                if(((gx*7+gy*11)%19)==0) shade=0.52f;
-                else if(((gx*3+gy*5)%13)==0) shade=1.28f;
-                else if(n<0.20f) shade=0.82f;
-            } else if(type==3) {
-                if(((gx*5+gy*3)%17)==0) shade=0.68f;
-                else if(((gx*7+gy)%19)==0) shade=1.20f;
-            } else if(type==4) {
-                shade=0.78f+n*0.18f;
-                if((y%9==2 || y%9==3) && (x%16)<11) shade=1.30f;
-            } else if(type==5) {
-                if(((gx*9+gy*5)%17)==0) shade=0.72f;
-                else if(n<0.22f) shade=0.91f;
-            } else if(type==6) {
-                shade=0.74f+n*0.38f;
-                if(((gx*5+gy*7)%7)==0) shade=0.48f;
-                else if(n>0.82f) shade=1.22f;
-            } else if(type==7) {
-                // Simple staggered brick courses with clear mortar lines.
-                int row=y/8, localY=y%8, shift=(row%2)*8;
-                if(localY==0 || ((x+shift)%16==0)) shade=0.48f;
-                else if(n>0.82f) shade=1.08f;
-            } else if(type==8) {
-                shade=0.72f+n*0.26f;
-                if(((gx+gy*2)%5)==0 || ((gx*3+gy)%11)==0) { shade=1.45f; p.r=255; p.g=190; p.b=48; }
-            } else if(type==9) {
-                shade=0.82f+n*0.24f;
-                if(gx%4==0 || gx%4==1) shade*=0.72f;
-                if((gx==3 || gx==4) && (gy==3 || gy==4)) shade=1.20f;
-            } else if(type==10) {
-                shade=0.78f+n*0.22f;
-                if((gx==3 || gx==4) && (gy==3 || gy==4)) { p.r=255; p.g=220; p.b=75; }
-                else if((gx==1 || gx==6) && (gy==3 || gy==4)) shade=1.20f;
-            } else if(type==11) {
-                shade=0.88f+n*0.16f;
-                if(x<3 || x>28 || y<3 || y>28) shade=0.55f;
-                else if((x/5+y/5)%2==0) shade=1.18f;
-                if(y<8 && (x%8==0)) shade=0.62f;
-            } else if(type==16) {
-                // Grass side: a crisp green turf cap above a dirt face, like classic voxel blocks.
-                if(y<7) { p=Color{91,158,54,255}; if(n>0.72f) shade=1.18f; if((x%13==2 && y<5) || (x%17==10 && y<4)) shade=0.62f; }
-                else { p=Color{126,91,57,255}; shade=0.80f+n*0.32f; if(detail>0.91f) shade=1.24f; }
-                if(y>=7 && ((gx*5+gy*3)%11)==0) shade=0.62f;
-            } else if(type==17) {
-                // Log end grain with visible square-ish growth rings.
-                int dx=x-15, dy=y-15; int ring=(int)(sqrtf((float)(dx*dx+dy*dy))/4.0f);
-                shade=(ring%2==0)?1.16f:0.78f;
-                if(x<3||x>28||y<3||y>28) shade*=0.72f;
-            } else if(type>=12) {
-                shade=0.70f+n*0.20f;
-                if(((gx*7+gy*11+type*3)%13)==0) shade=1.75f;
-                if(type==15 && ((gx+gy*3)%7)==0) shade=2.0f;
+            Color dark=mix(p,BLACK,0.22f), light=mix(p,WHITE,0.18f);
+            if(type==0) { // grass top
+                if(n<0.24f) p=dark; else if(n>0.79f) p=light;
+                if((px%7==1 && py%5==2)||(px%9==5 && py%7==0)) p=Color{73,139,49,255};
+            } else if(type==1) { // dirt with small warm clumps
+                if(n<0.28f) p=dark; else if(n>0.76f) p=light;
+                if((px*3+py*5)%17==0) p=Color{91,65,45,255};
+            } else if(type==2) { // stone with distinct pixel flecks
+                if(n<0.25f) p=Color{94,99,106,255}; else if(n>0.78f) p=Color{157,161,165,255};
+                if((px*7+py*11)%23==0) p=Color{76,81,88,255};
+            } else if(type==3) { // sand
+                if(n<0.27f) p=Color{174,148,83,255}; else if(n>0.76f) p=Color{220,198,130,255};
+                if((px+py*3)%19==0) p=Color{232,211,148,255};
+            } else if(type==4) { // water with horizontal highlights
+                p=(py%5==1 || py%7==4)?Color{105,174,211,255}:Color{48,112,166,255};
+                if((px+py*2)%13==0) p=Color{150,202,225,255};
+            } else if(type==5) { // snow
+                if(n<0.20f) p=Color{194,210,220,255}; else if(n>0.83f) p=WHITE;
+                if((px*5+py*3)%29==0) p=Color{171,199,215,255};
+            } else if(type==6) { // leaf clusters
+                p=n<0.25f?Color{42,94,42,255}:(n>0.78f?Color{94,157,65,255}:Color{58,119,51,255});
+                if((px+py*3)%11==0) p=Color{37,83,40,255};
+            } else if(type==7) { // brick courses and mortar
+                int row=py/4, local=py%4, shift=(row%2)*4;
+                p=(local==0 || (px+shift)%8==0)?Color{91,75,68,255}:bases[type];
+                if(n>0.87f && local>0) p=Color{178,112,76,255};
+            } else if(type==8) { // lava
+                p=(n>0.68f || (px+py*2)%9==0)?Color{255,174,38,255}:Color{191,54,18,255};
+                if((px*3+py)%13==0) p=Color{255,224,91,255};
+            } else if(type==9) { // bark side grain
+                p=(px%5==0 || px%5==1)?Color{83,53,32,255}:Color{133,87,49,255};
+                if((py+px*3)%13==0) p=Color{157,108,62,255};
+            } else if(type==10) { // flower petals and center
+                p=Color{76,130,52,255};
+                if((px==7||px==8) && py>7) p=Color{62,111,43,255};
+                if((px>=5&&px<=10&&py>=3&&py<=9) &&
+                   ((px==5||px==10)||(py==3||py==9)||(px==7||px==8))) p=Color{235,105,154,255};
+                if((px==7||px==8)&&(py==5||py==6)) p=Color{255,220,76,255};
+            } else if(type==11) { // crafting table face
+                if(py<3 || px<2 || px>13) p=Color{77,48,30,255};
+                else if(py<6) p=(px%4==0)?Color{203,157,91,255}:Color{157,105,59,255};
+                else if(px==2||px==13||py==7||py==14) p=Color{83,53,33,255};
+                else p=((px/3+py/3)%2==0)?Color{173,119,66,255}:Color{135,86,48,255};
+            } else if(type>=12 && type<=15) { // ores embedded in stone
+                p=(n<0.34f)?Color{92,97,103,255}:Color{128,132,137,255};
+                int oxp=(type==12?((px*5+py*3)%11==0):
+                         type==13?((px*7+py*2)%13==0):
+                         type==14?((px*3+py*7)%12==0):((px*9+py*5)%14==0));
+                if(oxp) p=type==12?Color{43,42,43,255}:(type==13?Color{207,139,91,255}:
+                    (type==14?Color{248,194,61,255}:Color{82,224,229,255}));
+            } else if(type==16) { // grass block side: turf cap above dirt
+                if(py<4) p=(n>0.75f)?Color{125,187,69,255}:Color{83,147,50,255};
+                else {
+                    p=(n<0.24f)?Color{99,69,46,255}:Color{132,94,59,255};
+                    if((px*3+py*5)%17==0) p=Color{89,63,43,255};
+                }
+                if(py==3 && (px%5==0 || px%7==2)) p=Color{72,133,44,255};
+            } else if(type==17) { // log end grain
+                int dx=px-8,dy=py-8,ring=(int)(sqrtf((float)(dx*dx+dy*dy))/2.4f);
+                p=(ring%2==0)?Color{173,126,75,255}:Color{112,73,42,255};
+                if(px==8&&py==8) p=Color{202,158,99,255};
+            } else {
+                if(n<0.22f) p=dark; else if(n>0.80f) p=light;
             }
-            p.r=(unsigned char)Clamp(p.r*shade,0,255);
-            p.g=(unsigned char)Clamp(p.g*shade,0,255);
-            p.b=(unsigned char)Clamp(p.b*shade,0,255);
-            ImageDrawPixel(&image,ox+x,oy+y,p);
+            ImageDrawRectangle(&image,ox+x,oy+y,2,2,p);
         }
     }
     Texture2D texture=LoadTextureFromImage(image);
