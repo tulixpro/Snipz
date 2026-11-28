@@ -669,6 +669,16 @@ int main() {
         if (messageTime>0) messageTime-=dt;
         meleeCooldown=std::max(0.0f,meleeCooldown-dt);
 
+        // Mode switching stays available even while the inventory is open.
+        if (screen==PLAYING && !commandOpen && (IsKeyPressed(KEY_G) || IsKeyPressed(KEY_M))) {
+            creative=!creative;
+            creativeFlying=false;
+            velocity.y=0.0f;
+            if(!creative) { health=20; hunger=20; stamina=100.0f; foodCount=5; }
+            saveCurrentWorld();
+            message=creative?"Creative mode enabled. Press V to fly.":"Survival mode enabled.";
+            messageTime=3.0f;
+        }
         if (screen==PLAYING && !commandOpen && !inventoryOpen) {
             if(IsKeyPressed(KEY_E) || ((activeGamepad>=0)&&IsGamepadButtonPressed(activeGamepad,GAMEPAD_BUTTON_RIGHT_FACE_UP))) { inventoryOpen=true; inventoryCursor=selected; EnableCursor(); }
         }
@@ -696,8 +706,7 @@ int main() {
                 else if(foodCount<=0) { message="No food left!"; messageTime=2.0f; }
             }
             if (IsKeyPressed(KEY_T)) { commandOpen=true; command[0]='\0'; EnableCursor(); }
-            if (IsKeyPressed(KEY_F1)) { message="WASD move | SHIFT sprint | P pickaxe | G switch mode | V creative flight | SPACE jump/up"; messageTime=5; }
-            if(IsKeyPressed(KEY_G)) { creative=!creative; creativeFlying=false; if(!creative) { health=20; hunger=20; stamina=100.0f; foodCount=5; } message=creative?"Creative mode! Press V to fly.":"Survival mode enabled."; messageTime=3.0f; }
+            if (IsKeyPressed(KEY_F1)) { message="WASD move | G or M switch mode | V creative flight | SPACE jump/up"; messageTime=5; }
             if(IsKeyPressed(KEY_V) && creative) { creativeFlying=!creativeFlying; velocity.y=0.0f; message=creativeFlying?"Flight enabled: SPACE up, SHIFT down.":"Flight disabled."; messageTime=2.5f; }
             if(IsKeyPressed(KEY_P)) { pickaxeEquipped=!pickaxeEquipped; miningTarget=-1; miningTimer=0.0f; message=pickaxeEquipped?"Pickaxe equipped.":"Hand selected."; messageTime=2.0f; }
             if(IsKeyPressed(KEY_C) && !creative) { if(blockCounts[9]>=4) { blockCounts[9]-=4; blockCounts[11]++; message="Crafted 1 crafting table from 4 wood."; } else { message="Need 4 wood to craft a crafting table."; } messageTime=3.0f; }
@@ -1070,7 +1079,7 @@ int main() {
                 DrawRectangle(x+7,hotY+6,30,25,palette[i]);
                 DrawText(creative?"INF":TextFormat("%d",blockCounts[i]),x+7,hotY+33,9,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT/DOWN | SPACE JUMP/UP | P PICKAXE | G MODE | V FLY | LMB MINE | RMB PLACE",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT/DOWN | SPACE JUMP/UP | P PICKAXE | G/M MODE | V FLY | LMB MINE | RMB PLACE",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
