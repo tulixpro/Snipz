@@ -13,7 +13,7 @@
 
 struct Block { Vector3 p; Color c; };
 struct Animal { Vector3 p; Vector3 dir; float turnTimer; int type; };
-struct CaveMob { Vector3 p; float attackTimer; int hp; };
+struct CaveMob { Vector3 p; float attackTimer; int hp; int type; };
 struct Villager { Vector3 p; Vector3 dir; float turnTimer; int skin; };
 
 
@@ -38,11 +38,12 @@ static const Color palette[] = {
     {92,176,88,255}, {130,105,78,255}, {115,125,140,255},
     {190,160,90,255}, {80,145,180,255}, {190,190,195,255},
     {65,120,65,255}, {150,90,65,255}, {235,82,24,255},
-    {112,76,45,255}, {232,91,137,255}, {145,93,54,255}
+    {112,76,45,255}, {232,91,137,255}, {145,93,54,255},
+    {42,43,47,255}, {190,132,91,255}, {238,190,55,255}, {70,205,220,255}
 };
-static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick","Lava","Wood","Flower","Crafting Table"};
+static const char* blockNames[] = {"Grass","Dirt","Stone","Sand","Water","Snow","Leaves","Brick","Lava","Wood","Flower","Crafting Table","Coal Ore","Iron Ore","Gold Ore","Diamond Ore"};
 static const char* worldNames[] = {"Green Valley","Flatlands","Highlands","Island"};
-static const int paletteCount = 12;
+static const int paletteCount = 16;
 
 static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::vector<int>& heights) {
     heights.assign(size * size, 0);
@@ -57,14 +58,15 @@ static void RebuildHeightMap(const std::vector<Block>& blocks, int size, std::ve
 
 static Texture2D CreateBlockAtlas() {
     // Clean, original voxel pixel-art tiles: broad color patches, not noisy per-pixel grain.
-    Image image=GenImageColor(192,64,WHITE);
-    const Color bases[12]={
+    Image image=GenImageColor(256,64,WHITE);
+    const Color bases[16]={
         {95,166,65,255},{134,96,62,255},{126,130,136,255},{194,174,104,255},
         {62,126,180,255},{218,224,230,255},{66,125,57,255},{150,91,62,255},{224,83,27,255},
-        {112,76,45,255},{232,91,137,255},{145,93,54,255}
+        {112,76,45,255},{232,91,137,255},{145,93,54,255},
+        {42,43,47,255},{190,132,91,255},{238,190,55,255},{70,205,220,255}
     };
-    for(int type=0;type<12;type++) {
-        int ox=(type%6)*32, oy=(type/6)*32;
+    for(int type=0;type<16;type++) {
+        int ox=(type%8)*32, oy=(type/8)*32;
         for(int y=0;y<32;y++) for(int x=0;x<32;x++) {
             int gx=x/4, gy=y/4;
             float n=noise2(gx+type*37,gy+type*19,4242);
@@ -115,6 +117,10 @@ static Texture2D CreateBlockAtlas() {
                 if(x<3 || x>28 || y<3 || y>28) shade=0.55f;
                 else if((x/5+y/5)%2==0) shade=1.18f;
                 if(y<8 && (x%8==0)) shade=0.62f;
+            } else if(type>=12) {
+                shade=0.70f+n*0.20f;
+                if(((gx*7+gy*11+type*3)%13)==0) shade=1.75f;
+                if(type==15 && ((gx+gy*3)%7)==0) shade=2.0f;
             }
             p.r=(unsigned char)Clamp(p.r*shade,0,255);
             p.g=(unsigned char)Clamp(p.g*shade,0,255);
@@ -146,8 +152,8 @@ static Model BuildWorldModel(const std::vector<Block>& blocks, int size) {
     auto face=[&](Vector3 n, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color color, int type) {
         Vector3 p[6]={a,b,c,a,c,d};
         int tile=32;
-        float u0=((type%6)*tile+0.5f)/192.0f, u1=((type%6)*tile+31.5f)/192.0f;
-        float v0=((type/6)*tile+0.5f)/64.0f, v1=((type/6)*tile+31.5f)/64.0f;
+        float u0=((type%8)*tile+0.5f)/256.0f, u1=((type%8)*tile+31.5f)/256.0f;
+        float v0=((type/8)*tile+0.5f)/64.0f, v1=((type/8)*tile+31.5f)/64.0f;
         const float uv[12]={u0,v0,u0,v1,u1,v1,u0,v0,u1,v1,u1,v0};
         for(int i=0;i<6;i++) {
             const auto& v=p[i];
@@ -215,10 +221,17 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
                 float caveB=smoothNoise2(x*0.047f-y*0.073f,z*0.047f+y*0.061f,seed+700+y*23);
                 float chamber=smoothNoise2(x*0.031f+y*0.043f,z*0.031f-y*0.057f,seed+1900+y*13);
                 float narrow=smoothNoise2(x*0.14f+y*0.19f,z*0.14f-y*0.16f,seed+2900+y*29);
-                bool tunnel=(caveA>0.735f && caveB>0.455f);
-                bool cavern=(chamber>0.735f && caveB>0.43f && narrow>0.39f);
+                bool tunnel=(caveA>0.72f && caveB>0.43f);
+                bool cavern=(chamber>0.69f && caveB>0.40f && narrow>0.34f);
                 if(y>3 && y<h-2 && (tunnel || cavern)) continue;
-                Color c = palette[1];
+                Color c = (y < h-4) ? palette[2] : palette[1];
+                if(y<h-5) {
+                    float ore=noise2(x*17+y*31,z*19-y*13,seed+5100);
+                    if(y<9 && ore>0.982f) c=palette[15];
+                    else if(y<15 && ore>0.972f) c=palette[14];
+                    else if(ore>0.955f) c=palette[13];
+                    else if(ore<0.035f) c=palette[12];
+                }
                 if (y == h-1) c = (type == 3 && h <= 2) ? palette[3] : palette[0];
                 if (type == 2 && y == h-1 && h > 13) c = palette[5];
                 if (type == 3 && h <= 2 && y == h-1) c = palette[3];
@@ -396,7 +409,7 @@ int main() {
     Model worldModel={};
     bool worldModelReady=false;
     int worldSize=96, worldType=0, seed=2026, selected=0, inventoryCursor=0;
-    int blockCounts[12]={0};
+    int blockCounts[16]={0};
     std::unordered_map<long long,int> blockLookup;
     auto blockKey=[&](int x,int y,int z)->long long { return ((long long)y*worldSize+(long long)z)*worldSize+(long long)x; };
     auto rebuildBlockLookup=[&]() { blockLookup.clear(); blockLookup.reserve(blocks.size()*2); for(int i=0;i<(int)blocks.size();++i) blockLookup[blockKey((int)std::lround(blocks[i].p.x),(int)std::lround(blocks[i].p.y),(int)std::lround(blocks[i].p.z))]=i; };
@@ -485,9 +498,10 @@ int main() {
                 float b=smoothNoise2(x*0.047f-y*0.073f,z*0.047f+y*0.061f,seed+700+y*23);
                 float c=smoothNoise2(x*0.031f+y*0.043f,z*0.031f-y*0.057f,seed+1900+y*13);
                 float n=smoothNoise2(x*0.14f+y*0.19f,z*0.14f-y*0.16f,seed+2900+y*29);
-                bool open=(a>0.735f && b>0.455f) || (c>0.735f && b>0.43f && n>0.39f);
+                bool open=(a>0.72f && b>0.43f) || (c>0.69f && b>0.40f && n>0.34f);
                 if(open) {
-                    caveMobs.push_back({{(float)x,(float)y+0.55f,(float)z},1.0f,3});
+                    int mobType=noise2(x+31*y,z-17*y,seed+811)>0.68f?1:0;
+                    caveMobs.push_back({{(float)x,(float)y+0.55f,(float)z},1.0f,mobType==0?3:2,mobType});
                     break;
                 }
             }
@@ -693,10 +707,10 @@ int main() {
                     yaw+=lookX*dt*(controllerSensitivity/10.0f);
                     pitch=Clamp(pitch+lookY*dt*(controllerSensitivity/12.0f),-1.45f,1.45f);
                 }
-                bool sprinting=!creative && (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT));
-                if(sprinting && stamina>0.5f && Vector3Length(move)>0) {
-                    move=Vector3Scale(Vector3Normalize(move),8.0f*dt);
-                    stamina=std::max(0.0f,stamina-24.0f*dt);
+                bool sprinting=IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+                if(sprinting && Vector3Length(move)>0 && (creative || stamina>0.5f)) {
+                    move=Vector3Scale(Vector3Normalize(move),(creative?14.0f:9.0f)*dt);
+                    if(!creative) stamina=std::max(0.0f,stamina-24.0f*dt);
                 } else {
                     if(Vector3Length(move)>0) move=Vector3Scale(Vector3Normalize(move),(creative?9.0f:5.0f)*dt);
                     if(!sprinting) stamina=std::min(100.0f,stamina+16.0f*dt);
@@ -853,7 +867,7 @@ int main() {
                             miningTarget=hit; miningTimer=0.0f;
                             int bt=0;
                             for(int t=0;t<paletteCount;t++) if(blocks[hit].c.r==palette[t].r && blocks[hit].c.g==palette[t].g && blocks[hit].c.b==palette[t].b) { bt=t; break; }
-                            const float hardness[12]={0.42f,0.48f,1.35f,0.38f,0.55f,0.30f,0.24f,0.95f,0.65f,0.72f,0.18f,0.82f};
+                            const float hardness[16]={0.42f,0.48f,1.35f,0.38f,0.55f,0.30f,0.24f,0.95f,0.65f,0.72f,0.18f,0.82f,0.62f,0.95f,1.15f,1.45f};
                             miningDuration=hardness[bt];
                         }
                         miningTimer+=dt;
@@ -914,19 +928,21 @@ int main() {
             }
             
             if(worldModelReady) DrawModel(worldModel,Vector3Zero(),1.0f,WHITE);
-            // Simple voxel cave zombies.
+            // Cave mobs: green zombies and pale skeletons.
             for(const auto& mob:caveMobs) {
                 Vector3 p=mob.p;
-                DrawCubeV({p.x,p.y+0.42f,p.z},{0.66f,0.82f,0.38f},Color{63,139,78,255});
-                DrawCubeV({p.x,p.y+1.02f,p.z},{0.48f,0.48f,0.44f},Color{77,157,91,255});
+                Color mobColor=mob.type==0?Color{63,139,78,255}:Color{190,194,181,255};
+                DrawCubeV({p.x,p.y+0.42f,p.z},{0.66f,0.82f,0.38f},mobColor);
+                DrawCubeV({p.x,p.y+1.02f,p.z},{0.48f,0.48f,0.44f},mob.type==0?Color{77,157,91,255}:Color{220,220,205,255});
                 DrawCubeV({p.x-0.13f,p.y+1.08f,p.z-0.225f},{0.09f,0.08f,0.035f},WHITE);
                 DrawCubeV({p.x+0.13f,p.y+1.08f,p.z-0.225f},{0.09f,0.08f,0.035f},WHITE);
                 DrawCubeV({p.x-0.13f,p.y+1.08f,p.z-0.245f},{0.04f,0.04f,0.02f},RED);
                 DrawCubeV({p.x+0.13f,p.y+1.08f,p.z-0.245f},{0.04f,0.04f,0.02f},RED);
-                DrawCubeV({p.x-0.43f,p.y+0.45f,p.z},{0.20f,0.62f,0.20f},Color{63,139,78,255});
-                DrawCubeV({p.x+0.43f,p.y+0.45f,p.z},{0.20f,0.62f,0.20f},Color{63,139,78,255});
-                DrawCubeV({p.x-0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},Color{48,65,112,255});
-                DrawCubeV({p.x+0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},Color{48,65,112,255});
+                DrawCubeV({p.x-0.43f,p.y+0.45f,p.z},{0.20f,0.62f,0.20f},mobColor);
+                DrawCubeV({p.x+0.43f,p.y+0.45f,p.z},{0.20f,0.62f,0.20f},mobColor);
+                Color legColor=mob.type==0?Color{48,65,112,255}:Color{105,108,102,255};
+                DrawCubeV({p.x-0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},legColor);
+                DrawCubeV({p.x+0.16f,p.y+0.08f,p.z},{0.20f,0.36f,0.22f},legColor);
             }
             // Friendly village NPCs with original voxel clothing and varied skin tones.
             const Color villagerSkin[4]={{194,139,103,255},{224,174,132,255},{151,100,72,255},{181,123,88,255}};
@@ -986,7 +1002,7 @@ int main() {
             DrawRectangleRounded({(float)GetScreenWidth()-210,14,196,64},.14f,8,Fade(Color{8,14,26,255},.8f));
             DrawText(TextFormat("%s  %02d:%02d",night?"NIGHT":"DAY",(int)(dayTime*24.0f),(int)(fmodf(dayTime*1440.0f,60.0f))),GetScreenWidth()-190,24,18,night?SKYBLUE:GOLD);
             DrawText("ESC  PAUSE",GetScreenWidth()-190,49,14,WHITE);
-            if(!creative) DrawText(TextFormat("CAVE ZOMBIES: %d  |  AIM + LEFT CLICK", (int)caveMobs.size()),GetScreenWidth()-310,88,13,Color{145,225,155,255});
+            if(!creative) DrawText(TextFormat("CAVE MOBS: %d  |  ZOMBIES + SKELETONS", (int)caveMobs.size()),GetScreenWidth()-330,88,13,Color{145,225,155,255});
             int cx=GetScreenWidth()/2, cy=GetScreenHeight()/2;
             DrawLine(cx-12,cy,cx-4,cy,WHITE); DrawLine(cx+4,cy,cx+12,cy,WHITE);
             DrawLine(cx,cy-12,cx,cy-4,WHITE); DrawLine(cx,cy+4,cx,cy+12,WHITE);
@@ -999,15 +1015,16 @@ int main() {
                     int ox=(k%3)*9-9, oy=(k/3)*4;
                     DrawLine(cx+ox,cy+33+oy,cx+ox+5,cy+37+oy,Color{35,35,38,220});
                 }            }
-            int start=(GetScreenWidth()-paletteCount*62)/2, hotY=GetScreenHeight()-76;
-            DrawRectangleRounded({(float)start-8,(float)hotY-7,(float)paletteCount*62+16,64},.12f,8,Fade(BLACK,.72f));
+            int slotW=44, slotGap=4, hotWidth=paletteCount*(slotW+slotGap)-slotGap;
+            int start=(GetScreenWidth()-hotWidth)/2, hotY=GetScreenHeight()-76;
+            DrawRectangleRounded({(float)start-5,(float)hotY-7,(float)hotWidth+10,64},.12f,8,Fade(BLACK,.72f));
             for(int i=0;i<paletteCount;i++) {
-                int x=start+i*62;
-                DrawRectangleRounded({(float)x,(float)hotY,54,48},.12f,6,i==selected?Color{190,139,54,255}:Color{38,50,68,255});
-                DrawRectangle(x+8,hotY+6,38,25,palette[i]);
-                DrawText(creative?"INF":TextFormat("%d",blockCounts[i]),x+8,hotY+33,10,WHITE);
+                int x=start+i*(slotW+slotGap);
+                DrawRectangleRounded({(float)x,(float)hotY,(float)slotW,48},.12f,5,i==selected?Color{190,139,54,255}:Color{38,50,68,255});
+                DrawRectangle(x+7,hotY+6,30,25,palette[i]);
+                DrawText(creative?"INF":TextFormat("%d",blockCounts[i]),x+7,hotY+33,9,WHITE);
             }
-            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | SHIFT SPRINT | SPACE JUMP | HOLD LMB MINE | RMB PLACE | WHEEL BLOCK | E INVENTORY | C CRAFT",18,GetScreenHeight()-103,13,WHITE);
+            DrawText((activeGamepad>=0)?"PAD: LS MOVE | RS LOOK | A JUMP | RT MINE | LT PLACE | Y INVENTORY":"WASD MOVE | HOLD SHIFT SPRINT | SPACE JUMP | HOLD LMB MINE/ATTACK | RMB PLACE | WHEEL BLOCK | E INVENTORY | C CRAFT",18,GetScreenHeight()-103,13,WHITE);
             if(messageTime>0) {
                 DrawRectangleRounded({18,104,(float)GetScreenWidth()-36,34},.12f,6,Fade(BLACK,.48f));
                 DrawText(message.c_str(),30,112,15,RAYWHITE);
