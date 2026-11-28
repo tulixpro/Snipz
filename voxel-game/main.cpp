@@ -891,8 +891,9 @@ int main() {
                             miningTarget=hit; miningTimer=0.0f;
                             int bt=0;
                             for(int t=0;t<paletteCount;t++) if(blocks[hit].c.r==palette[t].r && blocks[hit].c.g==palette[t].g && blocks[hit].c.b==palette[t].b) { bt=t; break; }
-                            const float hardness[16]={0.42f,0.48f,1.35f,0.38f,0.55f,0.30f,0.24f,0.95f,0.65f,0.72f,0.18f,0.82f,0.62f,0.95f,1.15f,1.45f};
-                            miningDuration=hardness[bt]*(pickaxeEquipped?0.34f:1.0f);
+                            // Material-specific mining times in seconds: stone and rare ores take noticeably longer.
+                            const float hardness[16]={0.55f,0.72f,2.25f,0.42f,0.70f,0.38f,0.30f,1.65f,1.25f,1.10f,0.22f,1.30f,1.55f,1.90f,2.65f,3.40f};
+                            miningDuration=hardness[bt]*(pickaxeEquipped?0.48f:1.0f);
                         }
                         miningTimer+=dt;
                         if(miningTimer>=miningDuration) {
