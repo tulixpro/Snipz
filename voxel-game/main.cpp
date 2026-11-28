@@ -236,6 +236,73 @@ static void GenerateWorld(std::vector<Block>& blocks, int size, int type, int se
             }
         }
     }
+    // Procedural villages: choose broad, reasonably flat clearings after terrain generation.
+    std::vector<int> villageHeights;
+    RebuildHeightMap(blocks,size,villageHeights);
+    auto heightAt=[&](int x,int z)->int {
+        if(x<0||x>=size||z<0||z>=size) return 0;
+        return villageHeights[x*size+z];
+    };
+    auto flatSite=[&](int cx,int cz)->bool {
+        int lo=999, hi=0;
+        for(int dx=-7;dx<=7;dx+=3) for(int dz=-7;dz<=7;dz+=3) {
+            int h=heightAt(cx+dx,cz+dz);
+            if(h<=18) return false;
+            lo=std::min(lo,h); hi=std::max(hi,h);
+        }
+        return hi-lo<=2;
+    };
+    std::vector<Vector2> villages;
+    int desiredVillages=std::max(1,size/150);
+    for(int v=0;v<desiredVillages;v++) {
+        int tx=size*(v+1)/(desiredVillages+1), tz=size*(v%2==0?1:2)/3;
+        bool found=false;
+        for(int radius=0;radius<size/3 && !found;radius+=4) {
+            for(int a=-radius;a<=radius && !found;a+=4) for(int b=-radius;b<=radius && !found;b+=4) {
+                int cx=tx+a, cz=tz+b;
+                if(cx<18||cz<18||cx>=size-18||cz>=size-18) continue;
+                if(flatSite(cx,cz)) { villages.push_back({(float)cx,(float)cz}); found=true; }
+            }
+        }
+    }
+    for(const Vector2& village:villages) {
+        int vx=(int)village.x, vz=(int)village.y;
+        int base=heightAt(vx,vz);
+        // A compact four-house settlement around a small central square.
+        for(int hx=-9;hx<=9;hx+=18) for(int hz=-9;hz<=9;hz+=18) {
+            int x0=vx+hx-3, z0=vz+hz-3;
+            int floorY=heightAt(vx+hx,vz+hz);
+            if(floorY<=18) continue;
+            for(int dx=0;dx<7;dx++) for(int dz=0;dz<7;dz++)
+                blocks.push_back({{(float)(x0+dx),(float)floorY,(float)(z0+dz)},palette[9]});
+            for(int dy=1;dy<=3;dy++) for(int dx=0;dx<7;dx++) for(int dz=0;dz<7;dz++) {
+                if(dx!=0&&dx!=6&&dz!=0&&dz!=6) continue;
+                bool doorway=(dx==3&&dz==6&&dy<=2);
+                bool window=(dy==2&&((dx==0||dx==6)&&(dz==2||dz==4)));
+                if(doorway||window) continue;
+                Color wall=((dx==0||dx==6)&&(dz==0||dz==6))?palette[9]:palette[7];
+                blocks.push_back({{(float)(x0+dx),(float)(floorY+dy),(float)(z0+dz)},wall});
+            }
+            // Two stepped roof layers make the silhouette read like a voxel house.
+            for(int dx=-1;dx<=7;dx++) for(int dz=-1;dz<=7;dz++) {
+                if(dx==0||dx==6||dz==0||dz==6)
+                    blocks.push_back({{(float)(x0+dx),(float)(floorY+4),(float)(z0+dz)},palette[9]});
+            }
+            for(int dx=1;dx<=5;dx++) for(int dz=1;dz<=5;dz++)
+                if(dx==1||dx==5||dz==1||dz==5)
+                    blocks.push_back({{(float)(x0+dx),(float)(floorY+5),(float)(z0+dz)},palette[9]});
+            blocks.push_back({{(float)(x0+3),(float)(floorY+1),(float)(z0+2)},palette[11]});
+        }
+        // Sand paths connect the houses to the village square.
+        for(int t=-13;t<=13;t++) for(int w=-1;w<=1;w++) {
+            int px=vx+t, pz=vz+w, qx=vx+w, qz=vz+t;
+            int py=heightAt(px,pz), qy=heightAt(qx,qz);
+            if(py>0) blocks.push_back({{(float)px,(float)(py-1),(float)pz},palette[3]});
+            if(qy>0) blocks.push_back({{(float)qx,(float)(qy-1),(float)qz},palette[3]});
+        }
+        blocks.push_back({{(float)vx,(float)base,(float)vz},palette[11]});
+    }
+
 }
 
 
@@ -269,7 +336,7 @@ static bool LoadWorldFile(std::vector<Block>& blocks, int& size, int& type, int&
     in.read((char*)&version,sizeof(version));    in.read((char*)&newSize,sizeof(newSize));    in.read((char*)&newType,sizeof(newType));
     in.read((char*)&newSeed,sizeof(newSeed));
     in.read((char*)&mode,sizeof(mode));    in.read((char*)&count,sizeof(count));
-    if(!in || version!=1 || newSize<32 || newSize>256 || newType<0 || newType>3 || count<0 || count>2000000) return false;
+    if(!in || version!=1 || newSize<32 || newSize>320 || newType<0 || newType>3 || count<0 || count>2000000) return false;
     std::vector<Block> loaded;
     loaded.reserve(count);
     for(int i=0;i<count;i++) {
@@ -316,7 +383,7 @@ int main() {
     std::vector<int> groundHeights;
     Model worldModel={};
     bool worldModelReady=false;
-    int worldSize=256, worldType=0, seed=2026, selected=0, inventoryCursor=0;
+    int worldSize=320, worldType=0, seed=2026, selected=0, inventoryCursor=0;
     int blockCounts[12]={0};
     bool creative=true, night=false, commandOpen=false, inventoryOpen=false;
     float dayTime=0.25f;
@@ -738,7 +805,7 @@ int main() {
                 if(button({cx+156,212,64,48},">")) worldType=(worldType+1)%4;
                 DrawText(TextFormat("WORLD SIZE:  %d x %d",worldSize,worldSize),(int)cx-130,285,20,WHITE);
                 if(button({cx-220,322,64,48},"-")) worldSize=std::max(32,worldSize-16);
-                if(button({cx+156,322,64,48},"+")) worldSize=std::min(256,worldSize+16);
+                if(button({cx+156,322,64,48},"+")) worldSize=std::min(320,worldSize+16);
                 DrawText(TextFormat("SEED: %d",seed),(int)cx-75,397,18,LIGHTGRAY);
                 if(button({cx+85,384,135,44},"RANDOM")) seed=GetRandomValue(1,999999);
                 if(button({cx-155,466,310,58},"GENERATE WORLD",true)) startWorld();
